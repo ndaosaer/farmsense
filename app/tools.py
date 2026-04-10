@@ -37,7 +37,8 @@ def search_disease(
     symptoms: list = None,
     symptom: str = None,
     crop: str = None,
-    language: str = "fr"
+    language: str = "fr",
+    **kwargs          # ← capture TOUT argument inattendu que Gemma 4 invente
 ) -> dict:
     """
     Cherche la maladie la plus probable d'après les symptômes visuels décrits
@@ -46,26 +47,36 @@ def search_disease(
     Paramètres
     ----------
     symptoms : list[str], optional
-        Liste de symptômes observés, ex: ["taches jaunes", "poudre grise"]
-        C'est la forme préférée — passer plusieurs symptômes améliore le diagnostic.
+        Liste de symptômes, ex: ["taches jaunes", "poudre grise"]
     symptom : str, optional
-        Symptôme unique sous forme de chaîne.
-        Gemma 4 utilise parfois ce nom au singulier — les deux sont acceptés.
-        Si les deux sont fournis, "symptoms" a la priorité.
+        Symptôme unique — Gemma 4 utilise parfois le singulier.
     crop : str, optional
         Culture concernée, ex: "mil", "arachide", "tomate"
     language : str
         "fr" pour français, "wo" pour wolof
-
-    Retourne
-    --------
-    dict avec : nom de la maladie, sévérité, urgence, traitement, prévention
+    **kwargs
+        Capture tous les arguments inattendus que Gemma 4 pourrait inventer
+        (ex: "plante", "culture", "description"...).
+        On les récupère ici pour ne pas planter, et on essaie de les réutiliser.
     """
-    # Normalisation : accepter "symptom" (singulier) ou "symptoms" (pluriel)
-    # Gemma 4 choisit parfois l'un ou l'autre selon sa compréhension du contexte.
-    # On unifie les deux formes en une seule liste avant de traiter.
+    # Récupérer les arguments inattendus de kwargs
+    # Gemma 4 envoie parfois "plante" à la place de "crop"
+    if crop is None:
+        crop = kwargs.get("plante") or kwargs.get("culture") or kwargs.get("plant")
+
+    # Gemma 4 envoie parfois "description" ou "symptomes" (sans accent) à la place de "symptoms"
+    if symptoms is None and symptom is None:
+        fallback = (
+            kwargs.get("symptomes") or
+            kwargs.get("description") or
+            kwargs.get("observations") or
+            kwargs.get("probleme")
+        )
+        if fallback:
+            symptoms = fallback if isinstance(fallback, list) else [fallback]
+
+    # Unifier symptom (singulier) et symptoms (pluriel) en une seule liste
     if symptoms is None and symptom is not None:
-        # Convertir le singulier en liste pour uniformiser le traitement
         symptoms = symptom if isinstance(symptom, list) else [symptom]
 
     if not symptoms:
