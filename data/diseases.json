@@ -1,0 +1,137 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "region": "Sahel / Sénégal",
+    "languages": ["fr", "wo"],
+    "crops_covered": ["mil", "sorgho", "arachide", "tomate", "niébé", "manioc", "maïs"],
+    "last_updated": "2026-04"
+  },
+  "diseases": [
+    {
+      "id": "mil_mildiou",
+      "name_fr": "Mildiou du mil",
+      "name_wo": "Doomi garab bu dëkk",
+      "crops": ["mil", "sorgho"],
+      "visual_symptoms": [
+        "taches jaunes sur feuilles",
+        "poudre grise en dessous des feuilles",
+        "feuilles qui jaunissent depuis le bas",
+        "feuilles déformées"
+      ],
+      "cause": "Champignon Sclerospora graminicola",
+      "severity": "haute",
+      "urgency_days": 3,
+      "treatment_fr": "1. Retirez et brûlez les feuilles atteintes immédiatement.\n2. Appliquez du Métalaxyl (Ridomil) dilué à 2g par litre d'eau.\n3. Évitez d'arroser le soir pour limiter l'humidité.\n4. Pratiquez la rotation des cultures l'année suivante.",
+      "treatment_wo": "1. Tàkk ak jënd feuilles yu dafa doon ci dëkk bi.\n2. Jëfandikoo Métalaxyl ak ndox (2g ci 1 litre ndox).\n3. Arrosez ci suba rekk, du ngoon.\n4. Soppi kàcc ci diggante yëpp.",
+      "prevention": "Semences traitées, espacement suffisant entre plants, éviter excès d'humidité."
+    },
+    {
+      "id": "arachide_cercosporiose",
+      "name_fr": "Cercosporiose de l'arachide",
+      "name_wo": "Yaram gerte bu dof",
+      "crops": ["arachide"],
+      "visual_symptoms": [
+        "petites taches brunes cerclées de jaune",
+        "taches sur les deux faces de la feuille",
+        "défoliation prématurée",
+        "feuilles qui tombent"
+      ],
+      "cause": "Champignon Cercospora arachidicola",
+      "severity": "moyenne",
+      "urgency_days": 7,
+      "treatment_fr": "1. Traitez avec du Chlorothalonil (Daconil) à 2,5g par litre.\n2. Appliquez toutes les 2 semaines dès apparition des symptômes.\n3. Ramassez et détruisez les feuilles tombées.\n4. Assurez une bonne aération entre les rangs.",
+      "treatment_wo": "1. Jëfandikoo Chlorothalonil (2,5g ci 1 litre ndox).\n2. Dafa soxor ci 2 semaines — jëfandikoo lépp 2 semaines.\n3. Ramasse feuilles yu tooy yi, jaap leen.",
+      "prevention": "Variétés résistantes ICGV, rotation avec sorgho ou mil."
+    },
+    {
+      "id": "tomate_alternaria",
+      "name_fr": "Alternariose de la tomate",
+      "name_wo": "Xepp tomate bu dafa doon",
+      "crops": ["tomate"],
+      "visual_symptoms": [
+        "taches brunes concentriques en forme de cible",
+        "feuilles du bas touchées en premier",
+        "tiges noires à la base",
+        "taches rondes avec cercles"
+      ],
+      "cause": "Champignon Alternaria solani",
+      "severity": "haute",
+      "urgency_days": 4,
+      "treatment_fr": "1. Supprimez toutes les feuilles touchées sous la plante.\n2. Traitez au Mancozèbe (Dithane) 2g par litre dès les premiers symptômes.\n3. Paillez le sol pour éviter les éclaboussures.\n4. Arrosez à la base, jamais sur le feuillage.",
+      "treatment_wo": "1. Tàkk feuilles yi ci suuf bi.\n2. Jëfandikoo Mancozèbe 2g/litre.\n3. Dëkk suuf ak yaayu garab.\n4. Arrose ci suuf rekk, du ci feuilles.",
+      "prevention": "Semences saines, tuteurage pour aérer la plante, éviter les blessures."
+    },
+    {
+      "id": "niebe_anthracnose",
+      "name_fr": "Anthracnose du niébé",
+      "name_wo": "Nebe bu dafa bët",
+      "crops": ["niébé", "haricot"],
+      "visual_symptoms": [
+        "taches rouge-brun sur gousses",
+        "lésions enfoncées et sombres",
+        "graines déformées",
+        "taches sur les tiges"
+      ],
+      "cause": "Champignon Colletotrichum lindemuthianum",
+      "severity": "moyenne",
+      "urgency_days": 7,
+      "treatment_fr": "1. Retirez et brûlez les gousses et feuilles atteintes.\n2. Appliquez du Thirame ou Mancozèbe à 2g par litre.\n3. Évitez les travaux dans la parcelle quand les plantes sont mouillées.\n4. Changez de parcelle l'année suivante.",
+      "treatment_wo": "1. Jëfandikoo Thirame ou Mancozèbe 2g/litre.\n2. Tàkk ak jaap gousses yi dañu doon.\n3. Dafa wàcc ci parcelle bi bu crop bi nit.",
+      "prevention": "Semences certifiées, rotation des cultures, ne pas travailler sol mouillé."
+    },
+    {
+      "id": "manioc_mosaic",
+      "name_fr": "Mosaïque du manioc",
+      "name_wo": "Manioc bu dafa doon ci bët",
+      "crops": ["manioc"],
+      "visual_symptoms": [
+        "feuilles jaunes et vertes en mosaïque",
+        "feuilles déformées et réduites",
+        "plante chétive",
+        "feuilles tordues"
+      ],
+      "cause": "Virus CMV transmis par aleurodes (mouches blanches)",
+      "severity": "haute",
+      "urgency_days": 2,
+      "treatment_fr": "1. Arrachez et brûlez les plants malades immédiatement — le virus se propage très vite.\n2. Contrôlez les aleurodes avec Imidaclopride 0,5mL par litre.\n3. Utilisez uniquement des boutures certifiées sans virus pour replanter.\n4. Ne jamais replanter des boutures de plants malades.",
+      "treatment_wo": "1. Tàkk ak jaap plants yi ci dëkk bi — virus bi dafa yëgël ak yégël.\n2. Jëfandikoo Imidaclopride 0,5mL/L contre mouches blanches.\n3. Jëfandikoo boutures certifiées pour replanter.",
+      "prevention": "Boutures certifiées uniquement, variétés résistantes (TME 419, Odongbo)."
+    },
+    {
+      "id": "carence_azote",
+      "name_fr": "Carence en azote",
+      "name_wo": "Dëkk du am azote",
+      "crops": ["mil", "sorgho", "maïs", "tomate", "arachide"],
+      "visual_symptoms": [
+        "jaunissement général depuis les vieilles feuilles",
+        "plante pâle et chétive",
+        "croissance ralentie",
+        "feuilles entièrement jaunes"
+      ],
+      "cause": "Sol pauvre en azote ou lessivage après fortes pluies",
+      "severity": "moyenne",
+      "urgency_days": 10,
+      "treatment_fr": "1. Apportez de l'urée (46-0-0) : 50kg par hectare en side-dressing.\n2. Ou du compost bien décomposé autour des pieds.\n3. Arrosez après application pour dissoudre l'engrais.\n4. Résultats visibles en 5 à 7 jours.",
+      "treatment_wo": "1. Jëfandikoo urée (50kg/hectare) ci kanam plants yi.\n2. Wala compost ci suuf bi.\n3. Arrose après pour dissoudre engrais bi.\n4. Gis résultats ci 5-7 fan.",
+      "prevention": "Compostage régulier, légumineuses en rotation pour fixer l'azote naturellement."
+    },
+    {
+      "id": "sorgho_ergot",
+      "name_fr": "Ergot du sorgho",
+      "name_wo": "Sorgho bu dafa bël",
+      "crops": ["sorgho"],
+      "visual_symptoms": [
+        "sécrétion sucrée collante sur la panicule",
+        "masses roses ou violacées à la place des grains",
+        "odeur fermentée",
+        "liquide collant sur les épis"
+      ],
+      "cause": "Champignon Claviceps africana",
+      "severity": "haute",
+      "urgency_days": 1,
+      "treatment_fr": "URGENT — À FAIRE AUJOURD'HUI :\n1. N'utilisez JAMAIS les grains malades — ils sont toxiques pour les humains et les animaux.\n2. Arrachez et brûlez les panicules atteintes immédiatement.\n3. Traitez les plants voisins avec Propiconazole à 0,5mL par litre en préventif.\n4. Signalez la situation à l'agent agricole local.",
+      "treatment_wo": "TOPP BI DAFA GAAW — FEKK CI TÉKKI BI :\n1. DËGG-DËGG : Jël du grains yi — dafa daw ci nit ak dëkk.\n2. Tàkk ak jaap panicules yi lépp.\n3. Jëfandikoo Propiconazole 0,5mL/L ci plants yu des yi.",
+      "prevention": "Variétés résistantes, semer tôt pour éviter la saison humide à floraison."
+    }
+  ]
+}
