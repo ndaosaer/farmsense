@@ -33,15 +33,25 @@ DISEASE_DB = _load_disease_db()
 # ---------------------------------------------------------------------------
 # OUTIL 1 — Recherche de maladie
 # ---------------------------------------------------------------------------
-def search_disease(symptoms: list, crop: str = None, language: str = "fr") -> dict:
+def search_disease(
+    symptoms: list = None,
+    symptom: str = None,
+    crop: str = None,
+    language: str = "fr"
+) -> dict:
     """
     Cherche la maladie la plus probable d'après les symptômes visuels décrits
     ou observés sur la photo. Fonctionne 100% offline.
 
     Paramètres
     ----------
-    symptoms : list[str]
-        Symptômes observés, ex: ["taches jaunes", "poudre grise sous les feuilles"]
+    symptoms : list[str], optional
+        Liste de symptômes observés, ex: ["taches jaunes", "poudre grise"]
+        C'est la forme préférée — passer plusieurs symptômes améliore le diagnostic.
+    symptom : str, optional
+        Symptôme unique sous forme de chaîne.
+        Gemma 4 utilise parfois ce nom au singulier — les deux sont acceptés.
+        Si les deux sont fournis, "symptoms" a la priorité.
     crop : str, optional
         Culture concernée, ex: "mil", "arachide", "tomate"
     language : str
@@ -51,6 +61,13 @@ def search_disease(symptoms: list, crop: str = None, language: str = "fr") -> di
     --------
     dict avec : nom de la maladie, sévérité, urgence, traitement, prévention
     """
+    # Normalisation : accepter "symptom" (singulier) ou "symptoms" (pluriel)
+    # Gemma 4 choisit parfois l'un ou l'autre selon sa compréhension du contexte.
+    # On unifie les deux formes en une seule liste avant de traiter.
+    if symptoms is None and symptom is not None:
+        # Convertir le singulier en liste pour uniformiser le traitement
+        symptoms = symptom if isinstance(symptom, list) else [symptom]
+
     if not symptoms:
         return {"error": "Aucun symptôme fourni"}
 
@@ -267,7 +284,11 @@ TOOL_DEFINITIONS = [
                 "symptoms": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Symptômes visuels observés, ex: ['taches jaunes', 'poudre grise']"
+                    "description": "Liste de symptômes visuels observés, ex: ['taches jaunes', 'poudre grise']"
+                },
+                "symptom": {
+                    "type": "string",
+                    "description": "Symptôme unique observé — utiliser si un seul symptôme est identifié"
                 },
                 "crop": {
                     "type": "string",
@@ -279,7 +300,7 @@ TOOL_DEFINITIONS = [
                     "description": "'fr' pour français, 'wo' pour wolof"
                 }
             },
-            "required": ["symptoms"]
+            "required": []
         }
     },
     {
