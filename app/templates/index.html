@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FarmSense — Assistant Agricole</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f0f4f0;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── En-tête ── */
+    header {
+      background: #2d7a2d;
+      color: white;
+      padding: 16px 20px;
+      text-align: center;
+    }
+    header h1 { font-size: 1.6em; font-weight: 700; }
+    header p  { font-size: 0.85em; opacity: 0.85; margin-top: 4px; }
+
+    /* ── Statut modèle ── */
+    #status-bar {
+      background: #e8f5e9;
+      border-bottom: 1px solid #c8e6c9;
+      padding: 8px 16px;
+      font-size: 0.82em;
+      text-align: center;
+      color: #2e7d32;
+    }
+
+    /* ── Layout principal ── */
+    .main {
+      display: flex;
+      flex: 1;
+      gap: 0;
+      max-width: 1000px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 16px;
+      gap: 16px;
+    }
+
+    /* ── Panneau gauche ── */
+    .sidebar {
+      width: 240px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .card h3 {
+      font-size: 0.82em;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    /* Langue */
+    .lang-btns { display: flex; gap: 8px; }
+    .lang-btn {
+      flex: 1;
+      padding: 8px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      font-size: 0.88em;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .lang-btn.active {
+      border-color: #2d7a2d;
+      background: #e8f5e9;
+      color: #2d7a2d;
+      font-weight: 600;
+    }
+
+    /* Zone */
+    select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.9em;
+      background: white;
+      color: #1a1a1a;
+    }
+
+    /* Upload photo */
+    .upload-zone {
+      border: 2px dashed #c8e6c9;
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: #666;
+      font-size: 0.85em;
+    }
+    .upload-zone:hover { border-color: #2d7a2d; background: #f1f8f1; }
+    .upload-zone input { display: none; }
+    #preview {
+      max-width: 100%;
+      border-radius: 8px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    /* Exemples */
+    .example-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 7px 10px;
+      margin-bottom: 5px;
+      background: #f5f5f5;
+      border: none;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 0.82em;
+      color: #333;
+      transition: background 0.15s;
+    }
+    .example-btn:hover { background: #e8f5e9; color: #2d7a2d; }
+
+    /* ── Zone chat ── */
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #messages {
+      flex: 1;
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      overflow-y: auto;
+      min-height: 380px;
+      max-height: 480px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .msg {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.92em;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+    .msg.bot {
+      background: #e8f5e9;
+      color: #1a3a1a;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    .msg.user {
+      background: #2d7a2d;
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    .msg.loading {
+      background: #f5f5f5;
+      color: #999;
+      font-style: italic;
+    }
+
+    /* Audio */
+    #audio-player {
+      width: 100%;
+      border-radius: 8px;
+      display: none;
+    }
+
+    /* Input */
+    .input-row {
+      display: flex;
+      gap: 8px;
+      background: white;
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    #user-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 0.95em;
+      resize: none;
+      min-height: 44px;
+      max-height: 120px;
+      padding: 4px 8px;
+      font-family: inherit;
+    }
+    #send-btn {
+      background: #2d7a2d;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
+      cursor: pointer;
+      font-size: 0.95em;
+      font-weight: 600;
+      transition: background 0.15s;
+      align-self: flex-end;
+    }
+    #send-btn:hover   { background: #1e5a1e; }
+    #send-btn:disabled { background: #aaa; cursor: not-allowed; }
+
+    /* Mobile */
+    @media (max-width: 640px) {
+      .main { flex-direction: column; padding: 10px; }
+      .sidebar { width: 100%; }
+      #messages { min-height: 280px; max-height: 350px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🌾 FarmSense</h1>
+  <p>Assistant agricole intelligent — Sénégal &amp; Sahel</p>
+</header>
+
+<div id="status-bar">Chargement du modèle...</div>
+
+<div class="main">
+
+  <!-- ── Sidebar ── -->
+  <div class="sidebar">
+
+    <div class="card">
+      <h3>Langue / Làkk</h3>
+      <div class="lang-btns">
+        <button class="lang-btn active" onclick="setLang('fr', this)">🇫🇷 Français</button>
+        <button class="lang-btn"        onclick="setLang('wo', this)">🇸🇳 Wolof</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Votre zone</h3>
+      <select id="location">
+        <option>Kaolack</option>
+        <option>Dakar</option>
+        <option>Thiès</option>
+        <option>Ziguinchor</option>
+        <option>Saint-Louis</option>
+        <option>Tambacounda</option>
+        <option>Kolda</option>
+        <option>Louga</option>
+        <option>Fatick</option>
+        <option>Kaffrine</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <h3>📷 Photo de plante</h3>
+      <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+        <input type="file" id="file-input" accept="image/*" onchange="previewImage(this)">
+        <span id="upload-label">Cliquez pour envoyer une photo</span>
+        <img id="preview" alt="Aperçu">
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Exemples</h3>
+      <button class="example-btn" onclick="useExample(this.textContent)">Feuilles de mil qui jaunissent</button>
+      <button class="example-btn" onclick="useExample(this.textContent)">Taches brunes sur arachide</button>
+      <button class="example-btn" onclick="useExample(this.textContent)">Météo cette semaine ?</button>
+      <button class="example-btn" onclick="useExample(this.textContent)">Prix de l'arachide ?</button>
+      <button class="example-btn" onclick="useExample(this.textContent)">Taches en cible sur tomate</button>
+      <button class="example-btn" onclick="useExample(this.textContent)">Feuilles yu mil dafa set</button>
+    </div>
+
+  </div>
+
+  <!-- ── Chat ── -->
+  <div class="chat-area">
+
+    <div id="messages">
+      <div class="msg bot">Bonjour ! Je suis FarmSense, votre assistant agricole.
+
+Envoyez une photo ou décrivez votre problème. Je diagnostique les maladies, consulte la météo de votre zone, et donne les prix du marché.
+
+Je parle Français et Wolof.
+
+Asalaa Maalekum ! Bind sa cosaan wala yónni foto ci sa garab.</div>
+    </div>
+
+    <audio id="audio-player" controls autoplay></audio>
+
+    <div class="input-row">
+      <textarea id="user-input"
+        placeholder="Décrivez votre problème..."
+        onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendMessage()}"
+      ></textarea>
+      <button id="send-btn" onclick="sendMessage()">Envoyer</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let currentLang     = 'fr';
+  let currentImage    = null;
+  let conversationHistory = [];
+
+  // ── Statut modèle ────────────────────────────────────────────────────
+  fetch('/status')
+    .then(r => r.json())
+    .then(d => {
+      const bar = document.getElementById('status-bar');
+      bar.textContent = d.ready
+        ? '✅ ' + d.model + ' prêt'
+        : '⚠️ Modèle non disponible — ' + d.message;
+      bar.style.background = d.ready ? '#e8f5e9' : '#fff3e0';
+      bar.style.color      = d.ready ? '#2e7d32' : '#e65100';
+    });
+
+  // ── Langue ───────────────────────────────────────────────────────────
+  function setLang(lang, btn) {
+    currentLang = lang;
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('user-input').placeholder =
+      lang === 'wo' ? 'Bind sa cosaan...' : 'Décrivez votre problème...';
+  }
+
+  // ── Preview image ────────────────────────────────────────────────────
+  function previewImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      currentImage = e.target.result.split(',')[1]; // base64 sans le header
+      const img = document.getElementById('preview');
+      img.src = e.target.result;
+      img.style.display = 'block';
+      document.getElementById('upload-label').textContent = '✅ ' + file.name;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ── Exemple ──────────────────────────────────────────────────────────
+  function useExample(text) {
+    document.getElementById('user-input').value = text;
+    document.getElementById('user-input').focus();
+  }
+
+  // ── Ajouter un message dans le chat ──────────────────────────────────
+  function addMessage(text, role) {
+    const box = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'msg ' + role;
+    div.textContent = text;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return div;
+  }
+
+  // ── Envoi du message ─────────────────────────────────────────────────
+  async function sendMessage() {
+    const input   = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const text    = input.value.trim();
+
+    if (!text && !currentImage) return;
+
+    // Afficher le message utilisateur
+    addMessage(text || '📷 Photo envoyée', 'user');
+    conversationHistory.push({ role: 'user', content: text || 'Analyse cette photo.' });
+
+    input.value  = '';
+    sendBtn.disabled = true;
+
+    // Message de chargement
+    const loadingDiv = addMessage('⏳ Analyse en cours...', 'loading');
+
+    try {
+      const response = await fetch('/chat', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message:  text || 'Analyse cette photo de ma plante.',
+          language: currentLang,
+          location: document.getElementById('location').value,
+          image:    currentImage,
+          history:  conversationHistory.slice(-6) // garder les 3 derniers échanges
+        })
+      });
+
+      const data = await response.json();
+      loadingDiv.remove();
+
+      if (data.error) {
+        addMessage('⚠️ ' + data.error, 'bot');
+      } else {
+        addMessage(data.response, 'bot');
+        conversationHistory.push({ role: 'assistant', content: data.response });
+
+        // Lecture audio si disponible
+        if (data.audio) {
+          const player = document.getElementById('audio-player');
+          player.src = 'data:audio/mp3;base64,' + data.audio;
+          player.style.display = 'block';
+          player.play();
+        }
+      }
+
+    } catch (err) {
+      loadingDiv.remove();
+      addMessage('Erreur de connexion. Réessayez.', 'bot');
+    }
+
+    // Réinitialiser l'image après envoi
+    currentImage = null;
+    document.getElementById('preview').style.display = 'none';
+    document.getElementById('upload-label').textContent = 'Cliquez pour envoyer une photo';
+    document.getElementById('file-input').value = '';
+
+    sendBtn.disabled = false;
+    document.getElementById('user-input').focus();
+  }
+</script>
+
+</body>
+</html>
