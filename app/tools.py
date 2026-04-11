@@ -147,7 +147,7 @@ ZONES_SENEGAL = {
 }
 
 
-def get_weather(location: str = "kaolack") -> dict:
+def get_weather(location: str = "kaolack", **kwargs) -> dict:
     """
     Prévisions météo des 3 prochains jours pour une zone agricole du Sénégal.
     Inclut des alertes agricoles automatiques (risque fongique, chaleur, etc.).
@@ -244,7 +244,7 @@ PRIX_MARCHE = {
 }
 
 
-def get_market_prices(crop: str = None) -> dict:
+def get_market_prices(crop: str = None, **kwargs) -> dict:
     """
     Prix actuels du marché pour une culture donnée, ou toutes les cultures.
 
@@ -252,7 +252,20 @@ def get_market_prices(crop: str = None) -> dict:
     ----------
     crop : str, optional
         Nom de la culture, ex: "arachide", "mil". Si None, retourne tout.
+    **kwargs
+        Capture les noms alternatifs que Gemma 4 peut utiliser :
+        "commodity", "culture", "produit", "item", "plant"
     """
+    # Gemma 4 utilise parfois d'autres noms à la place de "crop"
+    if crop is None:
+        crop = (
+            kwargs.get("commodity") or
+            kwargs.get("culture")   or
+            kwargs.get("produit")   or
+            kwargs.get("item")      or
+            kwargs.get("plant")
+        )
+
     if crop:
         crop_lower = crop.lower().strip()
         match = next(
