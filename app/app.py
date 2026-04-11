@@ -35,25 +35,32 @@ from tools import TOOL_DEFINITIONS, TOOL_FUNCTIONS
 OLLAMA_URL  = os.getenv("OLLAMA_URL",  "http://localhost:11434")
 GEMMA_MODEL = os.getenv("GEMMA_MODEL", "gemma4:12b")
 
-SYSTEM_PROMPT = """Tu es FarmSense, un assistant agricole expert pour les petits agriculteurs du Sénégal et du Sahel.
-Tu parles Français et Wolof. Tu es empathique, direct, et tu donnes des conseils concrets et accessibles.
+SYSTEM_PROMPT = """Tu es FarmSense, un assistant agricole pour les petits agriculteurs du Sénégal et du Sahel.
+Tu parles Français et Wolof. Tu es direct, pratique, et tu parles comme un ami agriculteur — pas comme un médecin.
 
-Tes capacités :
-1. Analyser des photos de plantes malades grâce à ta vision multimodale
-2. Diagnostiquer les maladies agricoles courantes du Sahel
-3. Donner des conseils de traitement adaptés aux ressources disponibles localement
-4. Consulter la météo locale pour adapter tes conseils
-5. Informer sur les prix du marché pour aider à planifier les ventes
+RÈGLES DE FORMAT — TRÈS IMPORTANTES :
+- JAMAIS de markdown : pas de #, pas de **, pas de *, pas de tirets de liste
+- Écris en texte simple, comme un SMS ou une conversation orale
+- Maximum 8 lignes par réponse
+- Structure ta réponse EXACTEMENT ainsi :
+    Ligne 1 : Le diagnostic en une phrase (ex: "C'est le Mildiou du mil.")
+    Ligne 2 : La cause en une phrase simple (ex: "C'est un champignon qui aime l'humidité.")
+    Lignes 3-6 : Les actions numérotées simplement (1. 2. 3.)
+    Dernière ligne : "Action immédiate : ..." (une seule chose à faire aujourd'hui)
 
-Règles importantes :
-- Réponds TOUJOURS dans la même langue que l'utilisateur (Français ou Wolof)
-- Quand tu vois une photo, analyse les symptômes visuels en détail avant de répondre
-- Utilise TOUJOURS les outils disponibles :
-    → search_disease pour tout problème sur une plante
-    → get_weather pour des conseils liés à la météo
-    → get_market_prices pour les questions de vente
-- Si la situation est urgente (ergot du sorgho, mosaïque virale), dis-le clairement dès le début
-- Termine TOUJOURS par : "La prochaine action à faire dans les 24h : ..."
+RÈGLES DE LANGUE :
+- Si le contexte indique Wolof, réponds ENTIÈREMENT en Wolof
+- Si le contexte indique Français, réponds en Français
+- Ne mélange pas les deux langues dans une même réponse
+
+RÈGLES D'OUTILS — utilise TOUJOURS :
+- search_disease dès qu'une plante semble malade
+- get_weather pour tout conseil lié à la météo ou à l'arrosage
+- get_market_prices dès qu'on parle de vente ou de prix
+
+URGENCES — si c'est l'ergot du sorgho ou la mosaïque du manioc :
+- Commence par "URGENT :" en majuscules
+- Dis que les grains/plants sont dangereux à consommer
 """
 
 
@@ -150,20 +157,67 @@ def call_gemma(messages: list, image_b64: str = None) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Synthèse vocale
+# Synthèse vocale — Français et Wolof
 # ---------------------------------------------------------------------------
-def text_to_speech(text: str) -> str | None:
+
+# Mots wolof courants pour détecter automatiquement la langue du texte
+_WOLOF_MARKERS = {
+    "jëfandikoo", "dafa", "tàkk", "jaap", "ndox", "garab",
+    "nit", "dëkk", "suba", "bëgg", "xamne", "wàcc", "jël",
+    "topp", "neem", "yëgël", "ci", "bi", "yi", "bu"
+}
+
+
+def detect_language(text: str) -> str:
+    """
+    Détecte si le texte est en Wolof ou en Français.
+    Retourne "wo" pour wolof, "fr" pour français.
+    """
+    words = set(text.lower().split())
+    wolof_hits = len(words & _WOLOF_MARKERS)
+    return "wo" if wolof_hits >= 2 else "fr"
+
+
+def text_to_speech(text: str, language: str = "fr") -> str | None:
     """
     Génère un fichier audio MP3 depuis le texte de la réponse.
-    Retourne le chemin du fichier temporaire, ou None en cas d'erreur.
+
+    Paramètres
+    ----------
+    text : str
+        Texte à lire (tronqué à 500 caractères pour la vitesse)
+    language : str
+        "fr" pour français, "wo" pour wolof.
+        Le Wolof n'étant pas supporté nativement par gTTS, on utilise
+        le moteur hausa ("ha") qui est phonétiquement le plus proche
+        des langues wolof/peul pour une prononciation acceptable.
+
+    Retourne
+    --------
+    str : chemin du fichier MP3 temporaire, ou None si erreur
     """
     try:
-        tts = gTTS(text=text[:500], lang="fr", slow=False)
+        if language == "wo":
+            # Vérifier si le texte est vraiment en wolof, sinon fallback français
+            detected = detect_language(text)
+            gtts_lang = "ha" if detected == "wo" else "fr"
+        else:
+            gtts_lang = "fr"
+
+        tts = gTTS(text=text[:500], lang=gtts_lang, slow=False)
         tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
         tts.save(tmp.name)
         return tmp.name
+
     except Exception:
-        return None
+        # Fallback : essayer en français si la langue choisie échoue
+        try:
+            tts = gTTS(text=text[:500], lang="fr", slow=False)
+            tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+            tts.save(tmp.name)
+            return tmp.name
+        except Exception:
+            return None
 
 
 # ---------------------------------------------------------------------------
@@ -225,7 +279,7 @@ def chat(user_message, image, language, location, history):
         response = f"Erreur inattendue : {str(e)}"
 
     history = history + [[user_message or "📷 Photo envoyée", response]]
-    audio   = text_to_speech(response)
+    audio   = text_to_speech(response, language=language)
 
     return history, "", audio
 
@@ -290,15 +344,18 @@ def build_interface() -> gr.Blocks:
                     height=200
                 )
 
-                gr.Markdown("---\n### 💡 Questions fréquentes")
-                examples = [
+                gr.Markdown("---\n### Exemples / Xam-xam")
+                examples_fr = [
                     "Mes feuilles de mil jaunissent depuis le bas",
-                    "J'ai des petites taches brunes sur mes feuilles d'arachide",
+                    "Taches brunes sur mes feuilles d'arachide",
                     "Quelle est la météo cette semaine ?",
                     "Quel est le prix actuel de l'arachide ?",
-                    "Ma tomate a des taches en forme de cible",
                 ]
-                for ex in examples:
+                examples_wo = [
+                    "Feuilles yu mil dafa set ci jaambur",
+                    "Am na taches yu ñuul ci feuilles yu gerte",
+                ]
+                for ex in examples_fr + examples_wo:
                     gr.Button(ex, size="sm", variant="secondary").click(
                         fn=lambda msg=ex: msg,
                         outputs=gr.Textbox(visible=False)
@@ -313,15 +370,12 @@ def build_interface() -> gr.Blocks:
                     show_copy_button=True,
                     value=[[
                         None,
-                        "Bonjour ! Je suis **FarmSense**, votre assistant agricole.\n\n"
-                        "Je peux vous aider à :\n"
-                        "- 🔍 **Diagnostiquer** une maladie (envoyez une photo !)\n"
-                        "- 🌦️ **Consulter la météo** de votre zone\n"
-                        "- 💰 **Vérifier les prix** du marché\n\n"
-                        "Décrivez votre problème ou envoyez une photo. "
-                        "Je parle **Français** et **Wolof**.\n\n"
-                        "---\n"
-                        "*Asalaa Maalekum ! Maa ngi dem FarmSense.*"
+                        "Bonjour ! Je suis FarmSense, votre assistant agricole.\n\n"
+                        "Dites-moi votre problème ou envoyez une photo de votre plante. "
+                        "Je diagnostique les maladies, consulte la météo de votre zone, "
+                        "et vous donne les prix du marché.\n\n"
+                        "Je parle Français et Wolof.\n\n"
+                        "Asalaa Maalekum ! Bind sa cosaan wala yónni foto ci sa garab."
                     ]]
                 )
 
