@@ -111,6 +111,10 @@ def call_gemma(messages: list, image_b64: str = None) -> str:
                 ]
             }
 
+
+  messages = [
+    {"role": "system", "content": SYSTEM_PROMPT + "\n\nIMPORTANT : Tu DOIS utiliser les outils disponibles. Ne jamais écrire le nom d'un outil comme réponse texte. Appelle-les directement."}
+] + messages
     # Boucle function calling
     for _ in range(3):
         payload = {
@@ -118,7 +122,8 @@ def call_gemma(messages: list, image_b64: str = None) -> str:
             "messages": [{"role": "system", "content": SYSTEM_PROMPT}] + messages,
             "tools":    TOOL_DEFINITIONS,
             "stream":   False,
-            "options":  {"temperature": 0.3, "num_ctx": 8192}
+            "options": {"temperature": 0.1, "num_ctx": 4096},
+            "format": ""
         }
 
         r = requests.post(f"{OLLAMA_URL}/api/chat", json=payload, timeout=120)
