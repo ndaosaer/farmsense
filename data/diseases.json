@@ -1,137 +1,454 @@
 {
   "metadata": {
-    "version": "1.0",
-    "region": "Sahel / Sénégal",
+    "version": "2.0",
+    "title": "Base de données phytosanitaire FarmSense — Sénégal & Sahel",
+    "description": "Base de données originale des principales maladies agricoles affectant les cultures vivrières et de rente au Sénégal et au Sahel. Constituée à partir de sources scientifiques (CABI, CIRAD, FAO, ISRA, Agrisenegal) et enrichie en langue wolof pour une accessibilité maximale aux agriculteurs locaux.",
+    "sources": [
+      "CABI Crop Protection Compendium — cabi.org/cpc",
+      "CIRAD Agritrop — base de données Afrique tropicale — agritrop.cirad.fr",
+      "ISRA — Institut Sénégalais de Recherches Agricoles — isra.sn",
+      "FAO — Organisation des Nations Unies pour l'Alimentation et l'Agriculture",
+      "Agrisenegal.com — Centre expertise agriculture Sahel",
+      "INRAN Niger — Guide identification maladies sorgho Sahel 2024",
+      "Afrique Verte — Fiches techniques maladies mil sorgho riz",
+      "CECI Sénégal — Guide agroécologie appliqué Sénégal Neve 2016",
+      "Pathobios — Contraintes biotiques sorgho mil Sahel 2023"
+    ],
     "languages": ["fr", "wo"],
-    "crops_covered": ["mil", "sorgho", "arachide", "tomate", "niébé", "manioc", "maïs"],
-    "last_updated": "2026-04"
+    "region": "Sénégal et Sahel occidental",
+    "crops_covered": [
+      "mil", "sorgho", "maïs", "riz", "arachide",
+      "niébé", "manioc", "tomate", "oignon", "gombo", "pastèque"
+    ],
+    "last_updated": "2026-04",
+    "total_diseases": 20,
+    "note_wolof": "Les traductions en Wolof ont été réalisées avec l'appui de ressources linguistiques et locuteurs natifs. Le Wolof étant une langue à tradition orale, les termes techniques agricoles sont souvent des adaptations phonétiques ou des descriptions fonctionnelles."
   },
+
   "diseases": [
+
     {
       "id": "mil_mildiou",
       "name_fr": "Mildiou du mil",
-      "name_wo": "Doomi garab bu dëkk",
+      "name_wo": "Doomi garab bu dëkk — mildiou",
       "crops": ["mil", "sorgho"],
       "visual_symptoms": [
-        "taches jaunes sur feuilles",
-        "poudre grise en dessous des feuilles",
-        "feuilles qui jaunissent depuis le bas",
-        "feuilles déformées"
+        "taches jaunes sur feuilles depuis le bas",
+        "poudre grise ou blanche sous les feuilles",
+        "feuilles qui jaunissent depuis le bas vers le haut",
+        "feuilles déformées et enroulées",
+        "épis malformés ou stériles"
       ],
-      "cause": "Champignon Sclerospora graminicola",
+      "cause": "Champignon Sclerospora graminicola — se développe par temps humide et chaud",
       "severity": "haute",
       "urgency_days": 3,
-      "treatment_fr": "1. Retirez et brûlez les feuilles atteintes immédiatement.\n2. Appliquez du Métalaxyl (Ridomil) dilué à 2g par litre d'eau.\n3. Évitez d'arroser le soir pour limiter l'humidité.\n4. Pratiquez la rotation des cultures l'année suivante.",
-      "treatment_wo": "1. Tàkk ak jënd feuilles yu dafa doon ci dëkk bi.\n2. Jëfandikoo Métalaxyl ak ndox (2g ci 1 litre ndox).\n3. Arrosez ci suba rekk, du ngoon.\n4. Soppi kàcc ci diggante yëpp.",
-      "prevention": "Semences traitées, espacement suffisant entre plants, éviter excès d'humidité."
+      "regions_senegal": ["Kaolack", "Thiès", "Diourbel", "Fatick", "Louga"],
+      "treatment_fr": "1. Retirez et brûlez immédiatement toutes les feuilles jaunes ou malformées.\n2. Appliquez du Métalaxyl (Ridomil) dilué à 2g par litre d'eau sur les feuilles restantes.\n3. Évitez d'arroser le soir — arrosez uniquement le matin tôt.\n4. Espacez bien les plants pour permettre l'air de circuler.",
+      "treatment_wo": "1. Tàkk ak jënd ci dëkk bi feuilles yu set ak yu doon ci kanam.\n2. Jëfandikoo Métalaxyl 2g ci 1 litre ndox ci feuilles yi.\n3. Arrosez ci suba rekk, du ngoon.\n4. Bàyyil kaw ci kanam ak kanam.",
+      "prevention": "Semences certifiées et traitées, espacement 75cm entre rangs, rotation avec légumineuses.",
+      "source": "CABI CPC Sclerospora graminicola; CIRAD Agritrop; Afrique Verte fiche mil"
     },
+
+    {
+      "id": "mil_charbon",
+      "name_fr": "Charbon du mil",
+      "name_wo": "Doomi garab bu ñuul",
+      "crops": ["mil"],
+      "visual_symptoms": [
+        "masses noires poudreuses à la place des grains",
+        "épis transformés en boules noires",
+        "poudre noire qui se disperse au vent",
+        "absence de grains normaux sur l'épi"
+      ],
+      "cause": "Champignon Tolyposporium penicillariae — spores transmises par le vent et les semences",
+      "severity": "haute",
+      "urgency_days": 2,
+      "regions_senegal": ["Louga", "Diourbel", "Kaolack", "Thiès"],
+      "treatment_fr": "1. Détruisez immédiatement les épis atteints — ne les laissez pas sécher sur pied.\n2. Ne récupérez JAMAIS les grains d'épis charbonnés comme semences.\n3. Traitez les semences de la prochaine campagne avec Thirame 3g par kg de semences.\n4. Rotation obligatoire — évitez le mil deux années de suite sur la même parcelle.",
+      "treatment_wo": "1. Jaap ci dëkk bi épis yu ñuul yi — du tax leen sëkk.\n2. DËGG-DËGG : Jël du grains yu daan ci épis yi pour semences bi.\n3. Tëj semences yi ak Thirame 3g/kg.\n4. Soppi kàcc — du semm mil ak mil ci parcelle yëpp.",
+      "prevention": "Semences certifiées traitées au Thirame, rotation obligatoire, variétés résistantes ISRA.",
+      "source": "CABI CPC Tolyposporium penicillariae; ISRA fiches techniques mil Sénégal"
+    },
+
+    {
+      "id": "sorgho_ergot",
+      "name_fr": "Ergot du sorgho",
+      "name_wo": "Sorgho bu dafa bël — ergot",
+      "crops": ["sorgho"],
+      "visual_symptoms": [
+        "sécrétion sucrée collante sur la panicule",
+        "masses roses ou violacées à la place des grains",
+        "odeur de fermentation alcoolisée",
+        "liquide mielleux s'écoulant des épillets"
+      ],
+      "cause": "Champignon Claviceps africana — toxique pour humains et animaux",
+      "severity": "haute",
+      "urgency_days": 1,
+      "regions_senegal": ["Tambacounda", "Kolda", "Kaffrine", "Kaolack"],
+      "treatment_fr": "URGENT — Agissez aujourd'hui :\n1. Ne consommez JAMAIS les grains malades — ils sont dangereux pour les humains et les animaux.\n2. Arrachez et brûlez toutes les panicules atteintes immédiatement.\n3. Traitez les plants voisins avec Propiconazole 0,5mL par litre en préventif.\n4. Signalez à l'agent agricole local dès que possible.",
+      "treatment_wo": "TOPP BI DAFA GAAW — FEKK CI TÉKKI BI :\n1. DËGG-DËGG : Jël du grains yi — dafa daw ci nit ak dëkk.\n2. Tàkk ak jaap panicules yi lépp ci dëkk bi.\n3. Jëfandikoo Propiconazole 0,5mL/L ci plants yu des yi.\n4. Wax agent agricole bi képp.",
+      "prevention": "Variétés résistantes, semis précoce avant la saison humide, rotation des cultures.",
+      "source": "CABI CPC Claviceps africana; FAO Sahel sorghum diseases; INRAN Niger 2024"
+    },
+
+    {
+      "id": "sorgho_charbon_couvert",
+      "name_fr": "Charbon couvert du sorgho",
+      "name_wo": "Sorgho bu dafa ñuul ci biir",
+      "crops": ["sorgho"],
+      "visual_symptoms": [
+        "grains transformés en masses noires recouvertes d'une membrane grisâtre",
+        "épis d'aspect normal mais grains noircis à l'intérieur",
+        "poudre noire libérée à la récolte",
+        "épis légers et creux au toucher"
+      ],
+      "cause": "Champignon Sporisorium sorghi — transmis par les semences infectées",
+      "severity": "moyenne",
+      "urgency_days": 7,
+      "regions_senegal": ["Tambacounda", "Kolda", "Kaffrine"],
+      "treatment_fr": "1. Triez soigneusement les semences avant le semis — rejetez tout grain suspect.\n2. Traitez les semences avec Carbendazime 2g par kg avant le semis.\n3. Pratiquez la rotation avec une culture non-céréalière l'année suivante.\n4. Détruisez les résidus de récolte après la saison.",
+      "treatment_wo": "1. Trier semences yi — jël du grains yu doon.\n2. Tëj semences yi ak Carbendazime 2g/kg.\n3. Soppi kàcc ak garab bu mén dëkk.\n4. Jaap résidus yi ci ginnaaw récolte bi.",
+      "prevention": "Semences certifiées traitées, rotation, élimination des résidus de récolte.",
+      "source": "CABI CPC Sporisorium sorghi; INRAN Niger guide maladies sorgho 2024"
+    },
+
+    {
+      "id": "mais_striure",
+      "name_fr": "Striure du maïs",
+      "name_wo": "Maïs bu am raay — striure",
+      "crops": ["maïs"],
+      "visual_symptoms": [
+        "rayures jaunes et vertes alternées sur toute la longueur des feuilles",
+        "feuilles striées jaune et vert",
+        "nanisme de la plante entière",
+        "feuilles plus petites que la normale"
+      ],
+      "cause": "Virus MSV (Maize Streak Virus) — transmis par la cicadelle Cicadulina mbila",
+      "severity": "haute",
+      "urgency_days": 5,
+      "regions_senegal": ["Tambacounda", "Kolda", "Kaolack", "Ziguinchor"],
+      "treatment_fr": "1. Aucun traitement curatif contre le virus — agissez sur le vecteur cicadelle.\n2. Traitez contre les cicadelles avec Imidaclopride 0,5mL/L dès l'apparition des symptômes.\n3. Arrachez et brûlez les plants très touchés pour éviter la propagation.\n4. Utilisez des variétés résistantes MSV recommandées par l'ISRA.",
+      "treatment_wo": "1. Mén du traiter virus bi — traiter cicadelles yi.\n2. Jëfandikoo Imidaclopride 0,5mL/L ci cicadelles yi.\n3. Tàkk ak jaap plants yu dëgël.\n4. Jëfandikoo variétés résistantes ISRA.",
+      "prevention": "Variétés résistantes MSV, semis précoce, contrôle des cicadelles dès la levée.",
+      "source": "CABI CPC Maize Streak Virus; ISRA Sénégal fiches maïs; Pathobios Sahel 2023"
+    },
+
+    {
+      "id": "mais_fusariose",
+      "name_fr": "Pourriture fusarienne de l'épi de maïs",
+      "name_wo": "Maïs bu dafa yeex ci kanam",
+      "crops": ["maïs"],
+      "visual_symptoms": [
+        "moisissure rose ou rougeâtre sur les grains de l'épi",
+        "grains pourris et décolorés dans l'épi",
+        "enveloppe de l'épi collante et décolorée",
+        "odeur de moisi sur l'épi"
+      ],
+      "cause": "Champignon Fusarium verticillioides — favorisé par humidité et blessures d'insectes foreurs",
+      "severity": "haute",
+      "urgency_days": 4,
+      "regions_senegal": ["Kaolack", "Tambacounda", "Kolda", "Ziguinchor"],
+      "treatment_fr": "1. Récoltez dès maturité — ne laissez pas les épis sur pied par temps humide.\n2. Séchez rapidement les grains après récolte à moins de 14% d'humidité.\n3. Ne consommez pas les grains avec moisissures roses — risque de mycotoxines cancérigènes.\n4. Traitez les semences avec Thirame pour la prochaine campagne.",
+      "treatment_wo": "1. Récolter ci mungi dëkk — du tax dëkk ak ndaw.\n2. Sëkk grains yi ak yomb ci ginnaaw récolte bi.\n3. Jël du grains yu am rose — dafa daw (mycotoxines).\n4. Tëj semences yi ak Thirame.",
+      "prevention": "Contrôle des foreurs de tiges (pyrale, sésamie), récolte à maturité, séchage rapide.",
+      "source": "CABI CPC Fusarium verticillioides; Agrisenegal défense cultures; CIRAD maïs Afrique"
+    },
+
+    {
+      "id": "riz_pyriculariose",
+      "name_fr": "Pyriculariose du riz (blast du riz)",
+      "name_wo": "Riz bu am taches — blast",
+      "crops": ["riz"],
+      "visual_symptoms": [
+        "taches losangiques grises avec bordure brune sur les feuilles",
+        "taches en forme de losange ou d'œil de serpent",
+        "col de panicule noirci et cassé — blast du cou",
+        "panicule blanche et vide"
+      ],
+      "cause": "Champignon Magnaporthe oryzae — très destructeur en conditions humides et avec excès d'azote",
+      "severity": "haute",
+      "urgency_days": 4,
+      "regions_senegal": ["Saint-Louis", "Podor", "Richard-Toll", "Ziguinchor", "Kolda"],
+      "treatment_fr": "1. Traitez immédiatement avec Tricyclazole (Beam) 0,6g/L ou Isoprothiolane.\n2. Appliquez 2 fois à 10 jours d'intervalle dès les premiers symptômes.\n3. Réduisez les apports d'azote — l'excès aggrave la maladie.\n4. Évitez l'arrosage le soir.",
+      "treatment_wo": "1. Jëfandikoo Tricyclazole 0,6g/L ci kanam.\n2. Appliquer 2 fois ci 10 fan d'intervalle.\n3. Dimi azote bi — dafa aggrave maladie bi.\n4. Arrosez ci suba rekk.",
+      "prevention": "Variétés résistantes NERICA et ISRA, équilibre fertilisation azotée, espacement correct.",
+      "source": "CABI CPC Magnaporthe oryzae; ISRA Vallée Fleuve Sénégal riz; FAO Afrique Ouest"
+    },
+
+    {
+      "id": "riz_helminthosporiose",
+      "name_fr": "Helminthosporiose du riz",
+      "name_wo": "Riz bu am taches bu ñuul",
+      "crops": ["riz"],
+      "visual_symptoms": [
+        "taches ovales brun foncé sur les feuilles",
+        "taches entourées d'un halo jaune visible",
+        "nombreuses taches couvrant toute la feuille",
+        "feuilles qui sèchent prématurément"
+      ],
+      "cause": "Champignon Bipolaris oryzae — se développe sur sols carencés en potassium et silice",
+      "severity": "moyenne",
+      "urgency_days": 7,
+      "regions_senegal": ["Saint-Louis", "Ziguinchor", "Kolda"],
+      "treatment_fr": "1. Appliquez du Mancozèbe (Dithane) 2g/L dès les premiers symptômes.\n2. Corrigez la carence en potassium : apportez 50kg/ha de KCl.\n3. Appliquez de la silice sous forme de cendre de balle de riz pour renforcer les plantes.\n4. Évitez l'excès d'azote qui affaiblit les parois cellulaires.",
+      "treatment_wo": "1. Jëfandikoo Mancozèbe 2g/L.\n2. Jëfandikoo potassium 50kg/ha.\n3. Jëfandikoo cendre balle de riz pour renforcer plants yi.\n4. Dimi azote bi.",
+      "prevention": "Fertilisation équilibrée NPK+Si, variétés tolérantes, semences saines.",
+      "source": "CABI CPC Bipolaris oryzae; ISRA Delta du Fleuve Sénégal riz"
+    },
+
     {
       "id": "arachide_cercosporiose",
       "name_fr": "Cercosporiose de l'arachide",
       "name_wo": "Yaram gerte bu dof",
       "crops": ["arachide"],
       "visual_symptoms": [
-        "petites taches brunes cerclées de jaune",
+        "petites taches brunes cerclées de jaune sur les feuilles",
         "taches sur les deux faces de la feuille",
-        "défoliation prématurée",
-        "feuilles qui tombent"
+        "défoliation précoce à partir des feuilles basses",
+        "taches circulaires brun foncé de 1 à 10mm"
       ],
-      "cause": "Champignon Cercospora arachidicola",
+      "cause": "Champignon Cercospora arachidicola (cercosporiose précoce) et Cercosporidium personatum (tardive)",
       "severity": "moyenne",
       "urgency_days": 7,
-      "treatment_fr": "1. Traitez avec du Chlorothalonil (Daconil) à 2,5g par litre.\n2. Appliquez toutes les 2 semaines dès apparition des symptômes.\n3. Ramassez et détruisez les feuilles tombées.\n4. Assurez une bonne aération entre les rangs.",
-      "treatment_wo": "1. Jëfandikoo Chlorothalonil (2,5g ci 1 litre ndox).\n2. Dafa soxor ci 2 semaines — jëfandikoo lépp 2 semaines.\n3. Ramasse feuilles yu tooy yi, jaap leen.",
-      "prevention": "Variétés résistantes ICGV, rotation avec sorgho ou mil."
+      "regions_senegal": ["Kaolack", "Fatick", "Thiès", "Diourbel", "Kaffrine"],
+      "treatment_fr": "1. Traitez avec Chlorothalonil (Daconil) 2,5g/L dès l'apparition des premières taches.\n2. Appliquez toutes les 2 semaines jusqu'à 6 semaines avant la récolte.\n3. Ramassez et brûlez toutes les feuilles tombées au sol.\n4. Assurez une bonne aération entre les rangs en désherbant régulièrement.",
+      "treatment_wo": "1. Jëfandikoo Chlorothalonil 2,5g/litre.\n2. Appliquer ci 2 semaines — répéter jusqu'à 6 semaines avant récolte.\n3. Ramasse feuilles yu tooy yi, jaap leen.\n4. Bàyyil kaw pour air bi.",
+      "prevention": "Variétés résistantes ISRA (Fleur11, GH119-20), rotation avec mil ou sorgho.",
+      "source": "CABI CPC Cercospora arachidicola; ISRA Bassin arachidier Sénégal; CIRAD arachide"
     },
+
+    {
+      "id": "arachide_rouille",
+      "name_fr": "Rouille de l'arachide",
+      "name_wo": "Yaram gerte bu am rouille",
+      "crops": ["arachide"],
+      "visual_symptoms": [
+        "pustules orangées ou couleur rouille sur la face inférieure des feuilles",
+        "taches jaunes sur la face supérieure correspondant aux pustules",
+        "poudre orange qui se détache au toucher",
+        "défoliation précoce si attaque sévère"
+      ],
+      "cause": "Champignon Puccinia arachidis — spores dispersées par le vent entre parcelles",
+      "severity": "moyenne",
+      "urgency_days": 10,
+      "regions_senegal": ["Kaolack", "Ziguinchor", "Fatick", "Kaffrine"],
+      "treatment_fr": "1. Traitez avec Propiconazole (Tilt) 0,5mL/L ou Mancozèbe 2g/L.\n2. Commencez le traitement 45 jours après le semis en préventif.\n3. Répétez toutes les 3 semaines si les conditions sont humides.\n4. Évitez l'arrosage par aspersion qui propage les spores.",
+      "treatment_wo": "1. Jëfandikoo Propiconazole 0,5mL/L wala Mancozèbe 2g/L.\n2. Commencer 45 fan ci ginnaaw semis.\n3. Répéter ci 3 semaines bu dëkk am.\n4. Arroser ci suuf rekk, du ci ataa.",
+      "prevention": "Variétés résistantes ISRA, semis en début de saison des pluies, éviter densité excessive.",
+      "source": "CABI CPC Puccinia arachidis; CIRAD ISRA arachide Sénégal Bassin arachidier"
+    },
+
+    {
+      "id": "arachide_aflatoxine",
+      "name_fr": "Contamination à l'aflatoxine de l'arachide",
+      "name_wo": "Yaram gerte bu dafa daw — aflatoxine",
+      "crops": ["arachide", "maïs"],
+      "visual_symptoms": [
+        "grains décolorés jaune-vert ou bruns au stockage",
+        "moisissure verdâtre ou noirâtre sur les gousses stockées",
+        "grains ridés et ratatinés",
+        "odeur de moisi caractéristique au stockage"
+      ],
+      "cause": "Champignon Aspergillus flavus — se développe pendant stress hydrique au champ et surtout au stockage humide",
+      "severity": "haute",
+      "urgency_days": 3,
+      "regions_senegal": ["Kaolack", "Fatick", "Diourbel", "Kaffrine", "Thiès"],
+      "treatment_fr": "DANGER SANTÉ PUBLIQUE :\n1. Ne consommez JAMAIS les arachides moisies — l'aflatoxine est cancérigène et mortelle à haute dose.\n2. Récoltez à maturité complète, ne tardez pas après les premières pluies d'arrêt.\n3. Séchez rapidement les gousses à moins de 8% d'humidité avant le stockage.\n4. Stockez dans des sacs propres et secs, à l'abri de l'humidité et des rongeurs.",
+      "treatment_wo": "DËGG-DËGG — DAWA NIT :\n1. Jël du arachides yu am moisi — dafa daw (cancer).\n2. Récolter ci mungi dëkk lépp.\n3. Sëkk gousses yi ak yomb ci ginnaaw.\n4. Soxor ci sac bu set, bu sëkk.",
+      "prevention": "Récolte à maturité, séchage rapide à l'abri, stockage sec, variétés tolérantes ISRA.",
+      "source": "CIRAD ISRA Aflatoxine arachide Sénégal; Dimanche Kane 2000 Montpellier; CABI CPC"
+    },
+
     {
       "id": "tomate_alternaria",
       "name_fr": "Alternariose de la tomate",
       "name_wo": "Xepp tomate bu dafa doon",
       "crops": ["tomate"],
       "visual_symptoms": [
-        "taches brunes concentriques en forme de cible",
+        "taches brunes concentriques en forme de cible sur les feuilles",
         "feuilles du bas touchées en premier",
-        "tiges noires à la base",
-        "taches rondes avec cercles"
+        "taches rondes avec cercles concentriques visibles",
+        "tiges noircies à la base",
+        "fruits avec taches noires enfoncées"
       ],
-      "cause": "Champignon Alternaria solani",
+      "cause": "Champignon Alternaria solani — favorisé par l'alternance pluie et sécheresse",
       "severity": "haute",
       "urgency_days": 4,
-      "treatment_fr": "1. Supprimez toutes les feuilles touchées sous la plante.\n2. Traitez au Mancozèbe (Dithane) 2g par litre dès les premiers symptômes.\n3. Paillez le sol pour éviter les éclaboussures.\n4. Arrosez à la base, jamais sur le feuillage.",
-      "treatment_wo": "1. Tàkk feuilles yi ci suuf bi.\n2. Jëfandikoo Mancozèbe 2g/litre.\n3. Dëkk suuf ak yaayu garab.\n4. Arrose ci suuf rekk, du ci feuilles.",
-      "prevention": "Semences saines, tuteurage pour aérer la plante, éviter les blessures."
+      "regions_senegal": ["Dakar", "Thiès", "Saint-Louis", "Niayes", "Casamance"],
+      "treatment_fr": "1. Retirez toutes les feuilles touchées sous la plante et détruisez-les.\n2. Traitez au Mancozèbe (Dithane) 2g/L dès les premiers symptômes.\n3. Paillez le sol autour des plantes pour éviter les éclaboussures de terre.\n4. Arrosez uniquement à la base, jamais sur le feuillage.",
+      "treatment_wo": "1. Tàkk feuilles yi ci suuf bi, jaap leen.\n2. Jëfandikoo Mancozèbe 2g/litre.\n3. Dëkk suuf ak paille.\n4. Arrose ci suuf rekk, du ci feuilles.",
+      "prevention": "Semences saines, tuteurage pour aérer la plante, éviter blessures, rotation 3 ans minimum.",
+      "source": "CABI CPC Alternaria solani; Agrisenegal maladies tomate Sénégal zone Niayes"
     },
+
+    {
+      "id": "tomate_fletrissement_bacterien",
+      "name_fr": "Flétrissement bactérien de la tomate",
+      "name_wo": "Xepp tomate bu dafa dëbël",
+      "crops": ["tomate", "oignon", "poivron", "aubergine"],
+      "visual_symptoms": [
+        "flétrissement soudain et total de la plante entière",
+        "feuilles restent vertes mais plante complètement tombée",
+        "tige coupée montre un liquide laiteux",
+        "racines brunies et pourries"
+      ],
+      "cause": "Bactérie Ralstonia solanacearum — survit longtemps dans les sols humides argileux",
+      "severity": "haute",
+      "urgency_days": 2,
+      "regions_senegal": ["Niayes", "Saint-Louis", "Casamance"],
+      "treatment_fr": "ATTENTION — Pas de traitement curatif efficace :\n1. Arrachez immédiatement les plants atteints et brûlez-les loin du champ.\n2. Désinfectez vos outils avec de l'eau de javel diluée à 10%.\n3. Ne replantez pas de solanacées sur cette parcelle pendant 3 à 4 ans minimum.\n4. Améliorez le drainage — la bactérie prospère en sol engorgé.",
+      "treatment_wo": "ATTENTION — Mén du traiter :\n1. Tàkk ak jaap plants yi ci dëkk bi — brûler leen.\n2. Désinfecter outils yi ak eau de javel.\n3. Du semm tomate ci parcelle bi pendant 3-4 ans.\n4. Améliorer drainage bi.",
+      "prevention": "Rotation longue 3-4 ans, amélioration drainage, variétés greffées résistantes disponibles.",
+      "source": "CABI CPC Ralstonia solanacearum; Agrisenegal défense cultures maraîchères Sénégal"
+    },
+
+    {
+      "id": "tomate_TYLCV",
+      "name_fr": "Enroulement jaune des feuilles de tomate (TYLCV)",
+      "name_wo": "Xepp tomate bu dafa set ci jaambur",
+      "crops": ["tomate"],
+      "visual_symptoms": [
+        "feuilles qui s'enroulent vers le haut et jaunissent",
+        "feuilles petites crispées et déformées",
+        "plante très réduite et chétive",
+        "fleurs qui tombent sans produire de fruits"
+      ],
+      "cause": "Virus TYLCV (Tomato Yellow Leaf Curl Virus) — transmis par la mouche blanche Bemisia tabaci",
+      "severity": "haute",
+      "urgency_days": 3,
+      "regions_senegal": ["Niayes", "Saint-Louis", "Dakar", "Thiès"],
+      "treatment_fr": "1. Traitez contre les mouches blanches avec Imidaclopride 0,5mL/L dès apparition.\n2. Installez des filets anti-insectes sur les jeunes plants en pépinière.\n3. Arrachez et brûlez les plants très atteints pour éviter la propagation.\n4. Utilisez des variétés hybrides résistantes TYLCV (Cobra F1, Mongal F1).",
+      "treatment_wo": "1. Jëfandikoo Imidaclopride 0,5mL/L contre mouches blanches yi.\n2. Jëfandikoo filets anti-insectes ci pépinière bi.\n3. Tàkk ak jaap plants yu dëgël.\n4. Jëfandikoo variétés résistantes TYLCV.",
+      "prevention": "Filets insecticides en pépinière, rotation, plants certifiés indemnes de virus.",
+      "source": "CABI CPC TYLCV; Agrisenegal virus tomate Sénégal zone Niayes Saint-Louis"
+    },
+
     {
       "id": "niebe_anthracnose",
       "name_fr": "Anthracnose du niébé",
       "name_wo": "Nebe bu dafa bët",
       "crops": ["niébé", "haricot"],
       "visual_symptoms": [
-        "taches rouge-brun sur gousses",
-        "lésions enfoncées et sombres",
-        "graines déformées",
-        "taches sur les tiges"
+        "taches rouge-brun enfoncées sur les gousses",
+        "lésions sombres et creusées sur les tiges",
+        "grains déformés avec taches noires",
+        "taches sur les feuilles également"
       ],
-      "cause": "Champignon Colletotrichum lindemuthianum",
+      "cause": "Champignon Colletotrichum lindemuthianum — favorisé par pluies fréquentes et forte humidité",
       "severity": "moyenne",
       "urgency_days": 7,
-      "treatment_fr": "1. Retirez et brûlez les gousses et feuilles atteintes.\n2. Appliquez du Thirame ou Mancozèbe à 2g par litre.\n3. Évitez les travaux dans la parcelle quand les plantes sont mouillées.\n4. Changez de parcelle l'année suivante.",
-      "treatment_wo": "1. Jëfandikoo Thirame ou Mancozèbe 2g/litre.\n2. Tàkk ak jaap gousses yi dañu doon.\n3. Dafa wàcc ci parcelle bi bu crop bi nit.",
-      "prevention": "Semences certifiées, rotation des cultures, ne pas travailler sol mouillé."
+      "regions_senegal": ["Kolda", "Kaffrine", "Ziguinchor", "Tambacounda"],
+      "treatment_fr": "1. Retirez et brûlez les gousses et feuilles atteintes.\n2. Traitez avec Thirame ou Mancozèbe 2g/L dès les premiers symptômes.\n3. Évitez tout travail dans la parcelle quand les plantes sont mouillées.\n4. Changez de parcelle l'année suivante.",
+      "treatment_wo": "1. Tàkk ak jaap gousses ak feuilles yu daan.\n2. Jëfandikoo Thirame wala Mancozèbe 2g/litre.\n3. Dafa wàcc ci parcelle bi bu crop bi nit.\n4. Soppi parcelle ci dëkk bi.",
+      "prevention": "Semences certifiées, rotation des cultures, ne pas travailler sol mouillé.",
+      "source": "CABI CPC Colletotrichum lindemuthianum; Afrique Verte fiche niébé Sahel"
     },
+
+    {
+      "id": "niebe_mosaique",
+      "name_fr": "Mosaïque du niébé",
+      "name_wo": "Nebe bu dafa doon ci bët — mosaïque",
+      "crops": ["niébé"],
+      "visual_symptoms": [
+        "feuilles tachetées jaune et vert en mosaïque irrégulière",
+        "feuilles déformées gaufrées et gauches",
+        "plant chétif avec petites feuilles",
+        "gousses réduites et déformées"
+      ],
+      "cause": "Virus BCMV (Bean Common Mosaic Virus) — transmis par pucerons",
+      "severity": "moyenne",
+      "urgency_days": 5,
+      "regions_senegal": ["Kolda", "Tambacounda", "Kaffrine"],
+      "treatment_fr": "1. Traitez contre les pucerons avec Imidaclopride 0,5mL/L ou savon insecticide naturel.\n2. Arrachez et brûlez les plants très atteints — le virus se propage par les pucerons.\n3. Utilisez des variétés résistantes ISRA (Pakau, Lisard, Léona).\n4. Évitez de semer à côté d'autres légumineuses malades.",
+      "treatment_wo": "1. Jëfandikoo Imidaclopride contre pucerons yi.\n2. Tàkk ak jaap plants yu dëgël.\n3. Jëfandikoo variétés résistantes ISRA (Pakau, Lisard).\n4. Du semm ci kanam légumineuses yu daan.",
+      "prevention": "Variétés résistantes BCMV ISRA, contrôle pucerons dès la levée, semences certifiées.",
+      "source": "CABI CPC Bean Common Mosaic Virus; ISRA Sénégal niébé; Pathobios Sahel 2023"
+    },
+
     {
       "id": "manioc_mosaic",
       "name_fr": "Mosaïque du manioc",
       "name_wo": "Manioc bu dafa doon ci bët",
       "crops": ["manioc"],
       "visual_symptoms": [
-        "feuilles jaunes et vertes en mosaïque",
-        "feuilles déformées et réduites",
-        "plante chétive",
-        "feuilles tordues"
+        "feuilles jaunes et vertes en mosaïque irrégulière",
+        "feuilles déformées tordues et réduites",
+        "plant entier chétif et de petite taille",
+        "nervures décolorées et tordues"
       ],
-      "cause": "Virus CMV transmis par aleurodes (mouches blanches)",
+      "cause": "Virus ACMV (African Cassava Mosaic Virus) — transmis par les mouches blanches Bemisia tabaci",
       "severity": "haute",
       "urgency_days": 2,
-      "treatment_fr": "1. Arrachez et brûlez les plants malades immédiatement — le virus se propage très vite.\n2. Contrôlez les aleurodes avec Imidaclopride 0,5mL par litre.\n3. Utilisez uniquement des boutures certifiées sans virus pour replanter.\n4. Ne jamais replanter des boutures de plants malades.",
-      "treatment_wo": "1. Tàkk ak jaap plants yi ci dëkk bi — virus bi dafa yëgël ak yégël.\n2. Jëfandikoo Imidaclopride 0,5mL/L contre mouches blanches.\n3. Jëfandikoo boutures certifiées pour replanter.",
-      "prevention": "Boutures certifiées uniquement, variétés résistantes (TME 419, Odongbo)."
+      "regions_senegal": ["Ziguinchor", "Kolda", "Tambacounda", "Casamance"],
+      "treatment_fr": "1. Arrachez et brûlez IMMÉDIATEMENT les plants malades — le virus se propage très vite.\n2. Traitez contre les mouches blanches avec Imidaclopride 0,5mL/L sur les plants voisins.\n3. Utilisez UNIQUEMENT des boutures certifiées saines pour replanter.\n4. Ne replantez JAMAIS des boutures de plants malades.",
+      "treatment_wo": "1. Tàkk ak jaap plants yi ci dëkk bi LÉEGI — virus bi dafa yëgël ak yégël.\n2. Jëfandikoo Imidaclopride 0,5mL/L contre mouches blanches.\n3. Jëfandikoo SEULEMENT boutures certifiées pour replanter.\n4. DËGG-DËGG : du jëfandikoo boutures yu daan.",
+      "prevention": "Boutures certifiées uniquement, variétés résistantes (TME 419, Odongbo), contrôle mouches.",
+      "source": "CABI CPC African Cassava Mosaic Virus; FAO Afrique Ouest manioc maladies"
     },
+
+    {
+      "id": "striga",
+      "name_fr": "Striga (herbe sorcière)",
+      "name_wo": "Striga — garab bu dafa jël mbëg",
+      "crops": ["mil", "sorgho", "maïs", "riz"],
+      "visual_symptoms": [
+        "plantes parasites rouges ou violettes poussant au pied des céréales",
+        "céréales naines et jaunissantes autour des plants de striga",
+        "plants de céréales qui semblent en stress hydrique même avec de l'eau",
+        "fleurs rouge-violettes caractéristiques emergent du sol en plein champ"
+      ],
+      "cause": "Plante parasite Striga hermonthica — ses racines se fixent sur les racines des céréales et volent l'eau et les nutriments directement",
+      "severity": "haute",
+      "urgency_days": 7,
+      "regions_senegal": ["Tambacounda", "Kolda", "Kaffrine", "Kaolack", "Fatick"],
+      "treatment_fr": "1. Arrachez le striga AVANT qu'il fleurisse — une seule plante produit 50 000 graines.\n2. Ne laissez JAMAIS le striga monter en graines sur votre champ.\n3. Semez du niébé ou de l'arachide en rotation — ils étouffent naturellement le striga.\n4. Appliquez de l'urée en micro-dose 2g par poquet pour stimuler les céréales.",
+      "treatment_wo": "1. Tàkk Striga AVAN mungi génn fleurs — 1 plant = 50 000 graines.\n2. Du tax Striga am graines ci sa champ — dafa gën ak gën.\n3. Semm niébé wala arachide pour tuer Striga bi.\n4. Jëfandikoo urée micro-dose 2g par poquet.",
+      "prevention": "Rotation avec légumineuses, micro-dose engrais, variétés tolérantes ISRA, faux-semis.",
+      "source": "FAO Striga Afrique Ouest contrôle; CIRAD programme Striga Sahel; ISRA Sénégal"
+    },
+
     {
       "id": "carence_azote",
       "name_fr": "Carence en azote",
-      "name_wo": "Dëkk du am azote",
-      "crops": ["mil", "sorgho", "maïs", "tomate", "arachide"],
+      "name_wo": "Dëkk du am azote — karence",
+      "crops": ["mil", "sorgho", "maïs", "tomate", "arachide", "riz", "oignon"],
       "visual_symptoms": [
-        "jaunissement général depuis les vieilles feuilles",
-        "plante pâle et chétive",
-        "croissance ralentie",
-        "feuilles entièrement jaunes"
+        "jaunissement général depuis les vieilles feuilles du bas de la plante",
+        "feuilles entièrement jaunes sans taches particulières",
+        "plante pâle et chétive dans son ensemble",
+        "croissance très lente par rapport aux plants voisins",
+        "tiges fines et faibles"
       ],
-      "cause": "Sol pauvre en azote ou lessivage après fortes pluies",
+      "cause": "Sol naturellement pauvre en azote ou lessivage important par fortes pluies",
       "severity": "moyenne",
       "urgency_days": 10,
-      "treatment_fr": "1. Apportez de l'urée (46-0-0) : 50kg par hectare en side-dressing.\n2. Ou du compost bien décomposé autour des pieds.\n3. Arrosez après application pour dissoudre l'engrais.\n4. Résultats visibles en 5 à 7 jours.",
-      "treatment_wo": "1. Jëfandikoo urée (50kg/hectare) ci kanam plants yi.\n2. Wala compost ci suuf bi.\n3. Arrose après pour dissoudre engrais bi.\n4. Gis résultats ci 5-7 fan.",
-      "prevention": "Compostage régulier, légumineuses en rotation pour fixer l'azote naturellement."
+      "regions_senegal": ["toutes régions du Sénégal"],
+      "treatment_fr": "1. Apportez de l'urée (46-0-0) : 50kg par hectare en épandage latéral près des plants.\n2. Ou du compost bien décomposé : 3 à 5 tonnes par hectare.\n3. Arrosez après application pour dissoudre l'engrais dans le sol.\n4. Les résultats sont visibles en 5 à 7 jours.",
+      "treatment_wo": "1. Jëfandikoo urée (46-0-0) 50kg/hectare ci kanam plants yi.\n2. Wala compost bu dëkk 3 à 5 tonnes/hectare.\n3. Arrose après pour dissoudre engrais bi.\n4. Gis résultats ci 5-7 fan.",
+      "prevention": "Compostage régulier, légumineuses en rotation pour fixer l'azote naturellement dans le sol.",
+      "source": "FAO guide fertilisation Afrique Ouest; ISRA recommandations fumure Sénégal cultures"
     },
+
     {
-      "id": "sorgho_ergot",
-      "name_fr": "Ergot du sorgho",
-      "name_wo": "Sorgho bu dafa bël",
-      "crops": ["sorgho"],
+      "id": "carence_fer",
+      "name_fr": "Carence en fer (chlorose ferrique)",
+      "name_wo": "Dëkk du am fer — chlorose",
+      "crops": ["tomate", "oignon", "maïs", "arachide", "riz"],
       "visual_symptoms": [
-        "sécrétion sucrée collante sur la panicule",
-        "masses roses ou violacées à la place des grains",
-        "odeur fermentée",
-        "liquide collant sur les épis"
+        "jaunissement des jeunes feuilles du sommet en gardant les nervures vertes",
+        "feuilles jaunes avec nervures vertes clairement visibles — chlorose internervaire",
+        "les vieilles feuilles restent vertes — seulement les jeunes feuilles touchées",
+        "croissance ralentie des nouvelles pousses"
       ],
-      "cause": "Champignon Claviceps africana",
-      "severity": "haute",
-      "urgency_days": 1,
-      "treatment_fr": "URGENT — À FAIRE AUJOURD'HUI :\n1. N'utilisez JAMAIS les grains malades — ils sont toxiques pour les humains et les animaux.\n2. Arrachez et brûlez les panicules atteintes immédiatement.\n3. Traitez les plants voisins avec Propiconazole à 0,5mL par litre en préventif.\n4. Signalez la situation à l'agent agricole local.",
-      "treatment_wo": "TOPP BI DAFA GAAW — FEKK CI TÉKKI BI :\n1. DËGG-DËGG : Jël du grains yi — dafa daw ci nit ak dëkk.\n2. Tàkk ak jaap panicules yi lépp.\n3. Jëfandikoo Propiconazole 0,5mL/L ci plants yu des yi.",
-      "prevention": "Variétés résistantes, semer tôt pour éviter la saison humide à floraison."
+      "cause": "Sol calcaire ou trop alcalin bloquant l'absorption du fer disponible par les racines",
+      "severity": "moyenne",
+      "urgency_days": 10,
+      "regions_senegal": ["Saint-Louis", "Louga", "zones calcaires du nord Sénégal"],
+      "treatment_fr": "1. Appliquez du sulfate de fer en solution (2g/L) directement sur les feuilles.\n2. Ou utilisez du chélate de fer EDTA-Fe en pulvérisation foliaire.\n3. Acidifiez légèrement le sol : soufre agricole 20kg/ha pour baisser le pH.\n4. Évitez d'arroser avec de l'eau très calcaire.",
+      "treatment_wo": "1. Jëfandikoo sulfate de fer 2g/L ci feuilles yi.\n2. Wala chélate de fer ci feuilles yi.\n3. Dimi pH bi : soufre agricole 20kg/ha.\n4. Arroser ak ndox bu amul calcaire.",
+      "prevention": "Correction du pH, apport de matière organique, utilisation d'eau peu calcaire.",
+      "source": "FAO guide nutrition plantes tropicales; ISRA fiches techniques cultures maraîchères Sénégal"
     }
+
   ]
 }
