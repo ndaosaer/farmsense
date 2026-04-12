@@ -96,8 +96,7 @@ def status():
 # ---------------------------------------------------------------------------
 def call_gemma(messages: list, image_b64: str = None) -> str:
     """
-    Envoie les messages à Gemma 4 via Ollama.
-    Gère la boucle function calling jusqu'à 3 appels d'outils.
+    Appelle Gemma 4 avec boucle function calling robuste.
     """
     # Ajouter l'image au dernier message si fournie
     if image_b64:
@@ -111,54 +110,75 @@ def call_gemma(messages: list, image_b64: str = None) -> str:
                 ]
             }
 
+    final_response = ""
 
-  messages = [
-    {"role": "system", "content": SYSTEM_PROMPT + "\n\nIMPORTANT : Tu DOIS utiliser les outils disponibles. Ne jamais écrire le nom d'un outil comme réponse texte. Appelle-les directement."}
-] + messages
-    # Boucle function calling
-    for _ in range(3):
+    # Boucle function calling — max 5 tours
+    for turn in range(5):
         payload = {
             "model":    GEMMA_MODEL,
             "messages": [{"role": "system", "content": SYSTEM_PROMPT}] + messages,
             "tools":    TOOL_DEFINITIONS,
             "stream":   False,
-            "options": {"temperature": 0.1, "num_ctx": 4096},
-            "format": ""
+            "options":  {"temperature": 0.1, "num_ctx": 4096}
         }
 
         r = requests.post(f"{OLLAMA_URL}/api/chat", json=payload, timeout=120)
         r.raise_for_status()
-        msg = r.json()["message"]
+        data = r.json()
+        msg  = data.get("message", {})
+        content    = msg.get("content", "")
+        tool_calls = msg.get("tool_calls", [])
 
-        # Pas d'appel d'outil → réponse finale
-        if not msg.get("tool_calls"):
-            return msg["content"]
+        # Si réponse textuelle non vide et pas d'appels d'outils → réponse finale
+        if content and content.strip() and not tool_calls:
+            return content.strip()
 
-        # Exécuter les outils demandés
-        messages.append({
-            "role":       "assistant",
-            "content":    msg.get("content", ""),
-            "tool_calls": msg["tool_calls"]
-        })
-
-        for call in msg["tool_calls"]:
-            fn_name = call["function"]["name"]
-            fn_args = call["function"].get("arguments", {})
-            if isinstance(fn_args, str):
-                fn_args = json.loads(fn_args)
-
-            if fn_name in TOOL_FUNCTIONS:
-                result = TOOL_FUNCTIONS[fn_name](**fn_args)
-            else:
-                result = {"error": f"Outil inconnu : {fn_name}"}
-
+        # Si appels d'outils → les exécuter et continuer
+        if tool_calls:
             messages.append({
-                "role":    "tool",
-                "name":    fn_name,
-                "content": json.dumps(result, ensure_ascii=False)
+                "role":       "assistant",
+                "content":    content or "",
+                "tool_calls": tool_calls
             })
+            for call in tool_calls:
+                fn_name = call["function"]["name"]
+                fn_args = call["function"].get("arguments", {})
+                if isinstance(fn_args, str):
+                    try:
+                        fn_args = json.loads(fn_args)
+                    except:
+                        fn_args = {}
 
-    return "Je n'ai pas pu finaliser le diagnostic. Veuillez réessayer."
+                if fn_name in TOOL_FUNCTIONS:
+                    result = TOOL_FUNCTIONS[fn_name](**fn_args)
+                else:
+                    result = {"error": f"Outil inconnu : {fn_name}"}
+
+                messages.append({
+                    "role":    "tool",
+                    "name":    fn_name,
+                    "content": json.dumps(result, ensure_ascii=False)
+                })
+            # Continuer la boucle pour obtenir la réponse finale
+            continue
+
+        # Contenu vide sans appels d'outils — forcer une réponse
+        if not tool_calls:
+            messages.append({"role": "user", "content": "Donne maintenant ta réponse finale à l'agriculteur."})
+            if turn >= 3:
+                break
+
+    # Dernier appel sans outils pour forcer la réponse
+    payload = {
+        "model":    GEMMA_MODEL,
+        "messages": [{"role": "system", "content": SYSTEM_PROMPT}] + messages,
+        "stream":   False,
+        "options":  {"temperature": 0.1, "num_ctx": 4096}
+    }
+    r = requests.post(f"{OLLAMA_URL}/api/chat", json=payload, timeout=120)
+    r.raise_for_status()
+    final = r.json().get("message", {}).get("content", "")
+    return final.strip() if final.strip() else "Je n'ai pas pu générer une réponse. Veuillez réessayer."
 
 
 # ---------------------------------------------------------------------------
