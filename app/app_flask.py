@@ -212,15 +212,15 @@ def call_gemma(messages: list, image_b64: str = None,
         messages = messages[:-1] + [{"role": "user", "content": enriched_content}]
 
     # Ajouter l'image au dernier message si fournie
+    # Ajouter l'image au dernier message si fournie
+    # Format Ollama natif : "images" comme liste dans le message
     if image_b64:
         last = messages[-1]
         if isinstance(last["content"], str):
             messages[-1] = {
-                "role": "user",
-                "content": [
-                    {"type": "image", "data": image_b64},
-                    {"type": "text",  "text": last["content"]}
-                ]
+                "role":    last["role"],
+                "content": last["content"],
+                "images":  [image_b64]   # ← format correct Ollama
             }
 
     # Appel Gemma 4 — sans outils pour éviter les blocages
