@@ -213,16 +213,15 @@ def call_gemma(messages: list, image_b64: str = None,
 
     # Ajouter l'image au dernier message si fournie
     # Ajouter l'image au dernier message si fournie
-    # Format Ollama natif : "images" comme liste dans le message
+    # Format Ollama natif pour Gemma 4 : "images" comme liste dans le message
     if image_b64:
         last = messages[-1]
         if isinstance(last["content"], str):
             messages[-1] = {
                 "role":    last["role"],
                 "content": last["content"],
-                "images":  [image_b64]   # ← format correct Ollama
+                "images":  [image_b64]
             }
-
     # Appel Gemma 4 — sans outils pour éviter les blocages
     payload = {
         "model":    GEMMA_MODEL,
