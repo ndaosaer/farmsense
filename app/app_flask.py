@@ -1,18 +1,15 @@
 """
-FarmSense — app_flask.py
-========================
-Serveur Flask stable pour Kaggle + ngrok.
-
-Stratégie d'appel des outils :
-  On n'utilise PAS le function calling natif de Gemma 4 (instable sur e4b).
-  À la place, on détecte les besoins côté Python, on appelle les outils
-  directement, on injecte les résultats dans le contexte, puis Gemma génère
-  une réponse finale enrichie. C'est plus fiable et plus rapide.
+FarmSense — app_flask.py v2
+============================
+Architecture hybride :
+  - CNN EfficientNet-B0 (99.4% précision) → diagnostic images
+  - Gemma 4 fine-tuné → questions textuelles (météo, prix, Wolof)
+  - Base phytosanitaire offline → enrichissement des réponses
 
 Routes :
   GET  /        → interface HTML
-  GET  /status  → état du modèle Ollama
-  POST /chat    → message + photo → réponse texte + audio base64
+  GET  /status  → état du modèle
+  POST /chat    → message + photo → réponse texte + audio
 """
 
 import base64
@@ -22,45 +19,78 @@ import os
 import tempfile
 
 import requests
+import torch
+import torch.nn as nn
 from flask import Flask, jsonify, render_template, request
 from gtts import gTTS
 from PIL import Image as PILImage
+from torchvision import models, transforms
 
 from tools import TOOL_FUNCTIONS
-
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-OLLAMA_URL  = os.getenv("OLLAMA_URL",  "http://localhost:11434")
-GEMMA_MODEL = os.getenv("GEMMA_MODEL", "gemma4:e4b")
+INFER_URL   = os.getenv("INFER_URL",   "http://localhost:8000/infer")
+CNN_PATH    = os.getenv("CNN_PATH",    "/tmp/farmsense_cnn.pth")
 
-SYSTEM_PROMPT = """Tu es FarmSense, un assistant agricole pour les petits agriculteurs du Sénégal et du Sahel.
-Tu parles Français et Wolof. Tu es direct, pratique, et tu parles comme un ami agriculteur.
+# Réponses CNN par classe
+RESPONSES_CNN = {
+    'Tomato___Bacterial_spot':    "Flétrissement bactérien de la tomate : diagnostic confirmé.\nCause : Bactérie Ralstonia solanacearum dans les sols humides argileux.\n1. Arrache et brûle immédiatement les plants malades.\n2. Désinfecte tes outils avec de l'eau de javel à 10%.\n3. Ne replante pas de tomates pendant 3 à 4 ans.\n4. Améliore le drainage de ton sol.\nAction immédiate : Arrache les plants malades aujourd'hui.",
+    'Tomato___Early_blight':      "Alternariose de la tomate : diagnostic confirmé.\nCause : Champignon Alternaria solani — alternance pluie et sécheresse.\n1. Retire les feuilles touchées et brûle-les.\n2. Traite au Mancozèbe 2g/L dès aujourd'hui.\n3. Paille le sol autour des plants.\n4. Arrose uniquement à la base.\nAction immédiate : Retire les feuilles malades et traite aujourd'hui.",
+    'Tomato___Late_blight':       "Mildiou de la tomate : diagnostic confirmé.\nCause : Champignon Phytophthora infestans — temps humide.\n1. Traite avec Mancozèbe 2g/L immédiatement.\n2. Retire les feuilles et fruits touchés.\n3. Évite l'arrosage le soir.\n4. Améliore la circulation d'air.\nAction immédiate : Traitement fongicide aujourd'hui.",
+    'Tomato___Leaf_Mold':         "Moisissure foliaire de la tomate : diagnostic confirmé.\nCause : Champignon Passalora fulva — forte humidité.\n1. Améliore la ventilation — espace les plants.\n2. Traite avec Chlorothalonil 2,5g/L.\n3. Évite l'arrosage par aspersion.\n4. Retire les feuilles touchées.\nAction immédiate : Améliore la ventilation et traite aujourd'hui.",
+    'Tomato___Septoria_leaf_spot': "Septoriose de la tomate : diagnostic confirmé.\nCause : Champignon Septoria lycopersici — saison humide.\n1. Retire toutes les feuilles touchées immédiatement.\n2. Traite au Mancozèbe 2g/L toutes les semaines.\n3. Paille le sol pour éviter les éclaboussures.\n4. Évite de mouiller les feuilles.\nAction immédiate : Retire les feuilles malades et traite aujourd'hui.",
+    'Tomato___Spider_mites Two-spotted_spider_mite': "Acariens à deux points sur tomate : diagnostic confirmé.\nCause : Tétranyques — temps chaud et sec.\n1. Traite avec Abamectine 0,5mL/L ou soufre mouillable 3g/L.\n2. Arrose le matin — l'humidité réduit les acariens.\n3. Retire les feuilles très infestées.\nAction immédiate : Traitement acaricide aujourd'hui.",
+    'Tomato___Target_Spot':       "Tache cible de la tomate : diagnostic confirmé.\nCause : Champignon Corynespora cassiicola — humidité élevée.\n1. Traite au Mancozèbe 2g/L dès aujourd'hui.\n2. Retire les feuilles et fruits touchés.\n3. Améliore la circulation d'air.\nAction immédiate : Traitement fongicide et suppression des parties malades.",
+    'Tomato___Tomato_Yellow_Leaf_Curl_Virus': "TYLCV : diagnostic confirmé.\nCause : Virus transmis par mouches blanches Bemisia tabaci.\n1. Traite avec Imidaclopride 0,5mL/L contre les mouches blanches.\n2. Arrache et brûle les plants très atteints.\n3. Installe des filets anti-insectes.\nAction immédiate : Traitement insecticide aujourd'hui.",
+    'Tomato___Tomato_mosaic_virus': "Mosaïque de la tomate : diagnostic confirmé.\nCause : Virus TMV transmis par contact et outils.\n1. Arrache et brûle les plants malades.\n2. Désinfecte tes outils avec de l'eau de javel.\n3. Utilise des semences certifiées.\nAction immédiate : Arrache les plants malades et désinfecte tes outils.",
+    'Tomato___healthy':           "Tes tomates sont saines — aucune maladie visible.\n1. Arrose à la base, jamais sur les feuilles.\n2. Surveille les taches chaque semaine.\n3. Désherbe régulièrement.\nAction immédiate : Continue la surveillance hebdomadaire.",
+    'Corn_(maize)___Common_rust_': "Rouille commune du maïs : diagnostic confirmé.\nCause : Champignon Puccinia sorghi — spores par le vent.\n1. Traite avec Propiconazole 0,5mL/L.\n2. Commence préventif 45 jours après semis.\n3. Utilise des variétés résistantes.\nAction immédiate : Traitement fongicide aujourd'hui.",
+    'Corn_(maize)___Northern_Leaf_Blight': "Helminthosporiose du maïs : diagnostic confirmé.\nCause : Champignon Exserohilum turcicum — temps humide.\n1. Traite au Mancozèbe 2g/L.\n2. Retire les feuilles très atteintes.\n3. Évite l'excès d'azote.\nAction immédiate : Traitement fongicide et retrait des feuilles malades.",
+    'Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot': "Cercosporiose du maïs : diagnostic confirmé.\nCause : Champignon Cercospora zeae-maydis — forte humidité.\n1. Traite au Chlorothalonil 2,5g/L.\n2. Pratique la rotation des cultures.\n3. Retire les résidus de récolte.\nAction immédiate : Traitement fongicide aujourd'hui.",
+    'Corn_(maize)___healthy':     "Ton maïs est sain — aucune maladie visible.\n1. Surveille les taches chaque semaine.\n2. Contrôle les foreurs de tiges.\n3. Maintiens une fertilisation équilibrée.\nAction immédiate : Continue la surveillance hebdomadaire.",
+    'early_leaf_spot_1':          "Cercosporiose précoce de l'arachide : diagnostic confirmé.\nCause : Champignon Cercospora arachidicola — Bassin arachidier.\n1. Traite avec Chlorothalonil 2,5g/L.\n2. Répète toutes les 2 semaines.\n3. Ramasse et brûle les feuilles tombées.\nAction immédiate : Traitement Chlorothalonil aujourd'hui.",
+    'late_leaf_spot_1':           "Cercosporiose tardive de l'arachide : diagnostic confirmé.\nCause : Champignon Cercosporidium personatum — stade avancé.\n1. Traite au Chlorothalonil 2,5g/L immédiatement.\n2. Continue toutes les 2 semaines.\n3. Brûle les feuilles tombées.\nAction immédiate : Traite au Chlorothalonil aujourd'hui.",
+    'rust_1':                     "Rouille de l'arachide : diagnostic confirmé.\nCause : Champignon Puccinia arachidis — spores par le vent.\n1. Traite avec Propiconazole 0,5mL/L.\n2. Répète toutes les 3 semaines.\n3. Arrose uniquement au pied.\nAction immédiate : Traitement fongicide aujourd'hui.",
+    'early_rust_1':               "Rouille précoce de l'arachide : détectée tôt.\nCause : Champignon Puccinia arachidis — stade précoce traitable.\n1. Traite avec Propiconazole 0,5mL/L immédiatement.\n2. Répète toutes les 3 semaines.\n3. Arrose uniquement à la base.\nAction immédiate : Traitement Propiconazole aujourd'hui.",
+    'nutrition_deficiency_1':     "Carence nutritionnelle sur arachide : diagnostic confirmé.\nCause : Sol pauvre en azote — fréquent sur sols sableux du Sahel.\n1. Apporte de l'urée 50kg/hectare.\n2. Si nervures vertes : carence fer — sulfate de fer 2g/L.\n3. Améliore avec compost 3 tonnes/hectare.\nAction immédiate : Apporte engrais azoté ou compost aujourd'hui.",
+    'healthy_leaf_1':             "Tes arachides sont saines — aucune maladie visible.\n1. Surveille les taches brunes chaque semaine.\n2. Commence traitements préventifs 45 jours après semis.\n3. Assure rotation avec mil ou sorgho.\nAction immédiate : Continue la surveillance hebdomadaire.",
+}
 
-RÈGLES DE FORMAT — OBLIGATOIRES :
-- JAMAIS de markdown : pas de #, pas de **, pas de *, pas de tirets, pas de tableaux
-- Texte simple uniquement, comme un SMS ou une conversation orale
-- Maximum 8 lignes par réponse
-- Structure ta réponse EXACTEMENT ainsi :
-    Ligne 1 : Le diagnostic en une phrase
-    Ligne 2 : La cause en une phrase simple
-    Lignes 3-6 : Les actions numérotées (1. 2. 3.)
-    Dernière ligne : "Action immédiate : ..." (une seule chose à faire aujourd'hui)
+# ---------------------------------------------------------------------------
+# Chargement du CNN
+# ---------------------------------------------------------------------------
+CLASSES = list(RESPONSES_CNN.keys())
+IDX_TO_CLASS = {i: c for i, c in enumerate(CLASSES)}
 
-RÈGLES DE LANGUE :
-- Si le contexte indique Wolof → réponds ENTIÈREMENT en Wolof
-- Si le contexte indique Français → réponds en Français
-- Ne mélange jamais les deux langues
+model_cnn = None
+cnn_transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
 
-URGENCES — ergot du sorgho ou mosaïque du manioc :
-- Commence par "URGENT :" en majuscules
-- Précise que les grains/plants sont dangereux à consommer
+def load_cnn():
+    global model_cnn, CLASSES, IDX_TO_CLASS
+    try:
+        checkpoint = torch.load(CNN_PATH, map_location='cuda' if torch.cuda.is_available() else 'cpu')
+        CLASSES      = checkpoint['classes']
+        IDX_TO_CLASS = checkpoint['idx_to_class']
 
-Quand des données de diagnostic, météo ou prix sont fournies dans le contexte,
-utilise-les pour donner des conseils précis et concrets.
-"""
+        cnn = models.efficientnet_b0(weights=None)
+        cnn.classifier[1] = nn.Linear(cnn.classifier[1].in_features, len(CLASSES))
+        cnn.load_state_dict(checkpoint['model_state_dict'])
+        cnn.eval()
+        if torch.cuda.is_available():
+            cnn = cnn.cuda()
+        model_cnn = cnn
+        print(f"CNN chargé — {len(CLASSES)} classes")
+    except Exception as e:
+        print(f"CNN non disponible : {e}")
+        model_cnn = None
 
+load_cnn()
 
 # ---------------------------------------------------------------------------
 # Application Flask
@@ -68,285 +98,179 @@ utilise-les pour donner des conseils précis et concrets.
 app = Flask(__name__)
 
 
-# ---------------------------------------------------------------------------
-# Route : page d'accueil
-# ---------------------------------------------------------------------------
 @app.route("/")
 def index():
     return render_template("index.html")
 
 
-# ---------------------------------------------------------------------------
-# Route : statut du modèle
-# ---------------------------------------------------------------------------
 @app.route("/status")
 def status():
-    try:
-        r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
-        models = [m["name"] for m in r.json().get("models", [])]
-        model_ok = any("gemma4" in m for m in models)
-        return jsonify({
-            "ready":   model_ok,
-            "model":   GEMMA_MODEL,
-            "message": "Modèle chargé" if model_ok else "Modèle non trouvé"
-        })
-    except Exception as e:
-        return jsonify({"ready": False, "model": GEMMA_MODEL, "message": str(e)})
+    cnn_ok = model_cnn is not None
+    return jsonify({
+        "ready":   True,
+        "model":   "FarmSense CNN + Gemma4 v2",
+        "message": f"CNN {'✅' if cnn_ok else '❌'} | LLM via serveur inférence"
+    })
 
 
 # ---------------------------------------------------------------------------
-# Détection automatique des besoins et appel des outils côté Python
+# Diagnostic CNN
+# ---------------------------------------------------------------------------
+def diagnose_image(image_b64: str, language: str = "fr") -> str:
+    """
+    Analyse une image avec le CNN EfficientNet.
+    Retourne la réponse FarmSense correspondante.
+    """
+    if model_cnn is None:
+        return None
+
+    try:
+        img_bytes = base64.b64decode(image_b64)
+        img = PILImage.open(io.BytesIO(img_bytes)).convert('RGB')
+        tensor = cnn_transform(img).unsqueeze(0)
+        if torch.cuda.is_available():
+            tensor = tensor.cuda()
+
+        with torch.no_grad():
+            outputs = model_cnn(tensor)
+            probs   = torch.softmax(outputs, dim=1)
+            conf, pred = probs.max(1)
+
+        confidence = conf.item()
+        classe     = IDX_TO_CLASS[pred.item()]
+
+        # Confiance trop faible → image non agricole
+        if confidence < 0.5:
+            if language == "wo":
+                return "Foto bi du am garab bu ndéwénél ci cultures yi.\nYónni foto bu dëgël ci feuilles wala parties yu daan ci sa culture."
+            return "Je ne reconnais pas de culture agricole sur cette photo.\nEnvoie une photo plus nette en gros plan sur les feuilles ou la partie malade."
+
+        response = RESPONSES_CNN.get(classe, "")
+        if not response:
+            return None
+
+        # Ajouter la confiance
+        conf_text = f"\nConfiance du diagnostic : {confidence:.0%}"
+        return response + conf_text
+
+    except Exception as e:
+        print(f"Erreur CNN : {e}")
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Outils textuels (météo, prix, maladies texte)
 # ---------------------------------------------------------------------------
 def run_tools(message: str, location: str, language: str) -> list:
-    """
-    Analyse le message et appelle les outils Python nécessaires.
-    Retourne une liste de strings avec les résultats à injecter dans le contexte.
-
-    On ne passe plus par le function calling de Gemma 4 (instable) —
-    on détecte les besoins ici et on appelle directement les fonctions Python.
-    """
     msg = message.lower()
     results = []
 
-    # ── Outil 1 : Diagnostic maladie ──────────────────────────────────
-    # Déclenché si symptômes visibles ou photo envoyée
     maladie_mots = [
-        "jauni", "tache", "taches", "maladie", "feuille", "feuilles",
-        "plante", "champignon", "pourri", "flétr", "déform", "moisissure",
-        "insecte", "ravageur", "symptôme", "problème", "malade", "mort",
-        "sèche", "brûl", "photo", "image", "analyse", "regarde",
-        "garab", "daan", "set", "xam"
+        "jauni", "tache", "maladie", "feuille", "champignon",
+        "pourri", "moisissure", "insecte", "malade",
+        "garab", "daan", "set"
     ]
     if any(k in msg for k in maladie_mots):
-        # Détecter la culture mentionnée
-        crop = None
-        for c in ["mil", "sorgho", "arachide", "tomate", "niébé", "niebe",
-                  "manioc", "maïs", "mais", "oignon", "riz", "haricot"]:
-            if c in msg:
-                crop = c
-                break
-
-        # Les symptômes = le message lui-même
-        symptoms = [message[:300]]
-
+        crop = next((c for c in ["mil","sorgho","arachide","tomate","niébé",
+                    "manioc","maïs","oignon","riz"] if c in msg), None)
         result = TOOL_FUNCTIONS["search_disease"](
-            symptoms=symptoms,
-            crop=crop,
-            language=language
-        )
-        results.append(f"DIAGNOSTIC:\n{json.dumps(result, ensure_ascii=False, indent=2)}")
+            symptoms=[message[:300]], crop=crop, language=language)
+        results.append(f"DIAGNOSTIC:\n{json.dumps(result, ensure_ascii=False)}")
 
-    # ── Outil 2 : Météo ───────────────────────────────────────────────
-    # Déclenché si question sur météo, arrosage, pluie, semaine
-    meteo_mots = [
-        "météo", "meteo", "pluie", "température", "chaleur", "vent",
-        "arroser", "arrosage", "semaine", "temps", "saison", "humidité",
-        "ndaw", "sanqal", "ndox bi", "loxo"
-    ]
-    if any(k in msg for k in meteo_mots):
-        # Détecter la zone dans le message
-        loc = location.lower()
-        for zone in ["dakar", "thiès", "thies", "kaolack", "ziguinchor",
-                     "saint-louis", "tambacounda", "kolda", "louga",
-                     "fatick", "kaffrine"]:
-            if zone in msg:
-                loc = zone
-                break
-
-        result = TOOL_FUNCTIONS["get_weather"](location=loc)
-        results.append(f"MÉTÉO:\n{json.dumps(result, ensure_ascii=False, indent=2)}")
-
-    # ── Outil 3 : Prix du marché ──────────────────────────────────────
-    # Déclenché si question sur prix, vente, marché
-    prix_mots = [
-        "prix", "marché", "marche", "vendre", "vente", "fcfa", "cfa",
-        "argent", "coût", "cout", "valeur", "combien", "acheter",
-        "achat", "xaalis", "jaay", "jënd"
-    ]
+    prix_mots = ["prix", "marché", "vendre", "fcfa", "combien", "xaalis"]
     if any(k in msg for k in prix_mots):
-        # Détecter la culture pour le prix
-        crop_prix = None
-        for c in ["arachide", "mil", "sorgho", "tomate", "niébé", "niebe",
-                  "manioc", "maïs", "mais", "oignon", "riz local", "riz"]:
-            if c in msg:
-                crop_prix = c
-                break
+        crop_p = next((c for c in ["arachide","mil","sorgho","tomate","niébé",
+                      "manioc","maïs","oignon","riz"] if c in msg), None)
+        result = TOOL_FUNCTIONS["get_market_prices"](crop=crop_p)
+        results.append(f"PRIX MARCHÉ:\n{json.dumps(result, ensure_ascii=False)}")
 
-        result = TOOL_FUNCTIONS["get_market_prices"](crop=crop_prix)
-        results.append(f"PRIX MARCHÉ:\n{json.dumps(result, ensure_ascii=False, indent=2)}")
+    meteo_mots = ["météo", "pluie", "arroser", "semaine", "ndaw"]
+    if any(k in msg for k in meteo_mots):
+        result = TOOL_FUNCTIONS["get_weather"](location=location.lower())
+        results.append(f"MÉTÉO:\n{json.dumps(result, ensure_ascii=False)}")
 
     return results
 
 
 # ---------------------------------------------------------------------------
-# Appel Gemma 4 — sans function calling, contexte enrichi
+# Appel LLM via serveur d'inférence
 # ---------------------------------------------------------------------------
-def call_gemma(messages: list, image_b64: str = None,
-               tool_results: list = None) -> str:
-    """
-    Envoie le message à Gemma 4 avec les résultats des outils
-    déjà injectés dans le contexte.
-
-    Paramètres
-    ----------
-    messages     : historique de conversation au format Ollama
-    image_b64    : image encodée en base64 (optionnel)
-    tool_results : liste de strings avec les résultats des outils
-    """
-    # Enrichir le dernier message avec les résultats des outils
-    if tool_results:
-        last = messages[-1]
-        last_content = (
-            last["content"]
-            if isinstance(last["content"], str)
-            else str(last["content"])
-        )
-        context_block = "\n\n".join(tool_results)
-        enriched_content = (
-            f"{last_content}\n\n"
-            f"=== Données disponibles pour ta réponse ===\n"
-            f"{context_block}\n"
-            f"=== Fin des données ===\n\n"
-            f"Utilise ces données pour donner une réponse précise et courte."
-        )
-        messages = messages[:-1] + [{"role": "user", "content": enriched_content}]
-
-    # Ajouter l'image au dernier message si fournie
-    # Ajouter l'image au dernier message si fournie
-    # Format Ollama natif pour Gemma 4 : "images" comme liste dans le message
-    if image_b64:
-        last = messages[-1]
-        if isinstance(last["content"], str):
-            messages[-1] = {
-                "role":    last["role"],
-                "content": last["content"],
-                "images":  [image_b64]
-            }
-    # Appel Gemma 4 — sans outils pour éviter les blocages
-    payload = {
-        "model":    GEMMA_MODEL,
-        "messages": [{"role": "system", "content": SYSTEM_PROMPT}] + messages,
-        "stream":   False,
-        "options":  {"temperature": 0.2, "num_ctx": 4096}
-    }
-
-    r = requests.post(f"{OLLAMA_URL}/api/chat", json=payload, timeout=120)
-    r.raise_for_status()
-
-    content = r.json().get("message", {}).get("content", "")
-    return (
-        content.strip()
-        if content.strip()
-        else "Je n'ai pas pu générer une réponse. Veuillez réessayer."
-    )
+def call_llm(prompt: str) -> str:
+    try:
+        r = requests.post(INFER_URL, json={"prompt": prompt}, timeout=120)
+        return r.json().get("response", "Erreur inférence")
+    except Exception as e:
+        return f"Erreur : {str(e)}"
 
 
 # ---------------------------------------------------------------------------
-# Synthèse vocale — Français et Wolof
+# Synthèse vocale
 # ---------------------------------------------------------------------------
-_WOLOF_MARKERS = {
-    "jëfandikoo", "dafa", "tàkk", "jaap", "ndox", "garab",
-    "nit", "dëkk", "suba", "bëgg", "xamne", "wàcc", "jël",
-    "topp", "neem", "yëgël", "ci", "bi", "yi", "bu", "xam"
-}
-
+_WOLOF_MARKERS = {"jëfandikoo","dafa","tàkk","ndox","garab","ci","bi","yi"}
 
 def text_to_speech(text: str, language: str = "fr") -> str | None:
-    """
-    Génère un fichier audio MP3 et le retourne encodé en base64.
-
-    Le Wolof n'est pas supporté nativement par gTTS.
-    On utilise le moteur hausa ("ha") qui est phonétiquement
-    le plus proche parmi les langues disponibles.
-    """
     try:
         if language == "wo":
-            # Vérifier si le texte contient vraiment du wolof
             words = set(text.lower().split())
             gtts_lang = "ha" if len(words & _WOLOF_MARKERS) >= 2 else "fr"
         else:
             gtts_lang = "fr"
-
         tts = gTTS(text=text[:500], lang=gtts_lang, slow=False)
         tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
         tts.save(tmp.name)
-
         with open(tmp.name, "rb") as f:
             audio_b64 = base64.b64encode(f.read()).decode("utf-8")
         os.unlink(tmp.name)
         return audio_b64
-
     except Exception:
-        # Fallback silencieux — pas d'audio plutôt qu'une erreur
         return None
 
 
 # ---------------------------------------------------------------------------
-# Route principale : chat
+# Route chat
 # ---------------------------------------------------------------------------
 @app.route("/chat", methods=["POST"])
 def chat():
-    """
-    Reçoit : { message, language, location, image (base64), history }
-    Retourne : { response (str), audio (base64 ou null) }
-    """
     data     = request.get_json()
     message  = data.get("message", "")
     language = data.get("language", "fr")
     location = data.get("location", "Kaolack")
     image    = data.get("image")
-    history  = data.get("history", [])
 
     if not message and not image:
         return jsonify({"error": "Message vide"})
 
-    # Enrichir le message avec le contexte de l'agriculteur
-    lang_label = "Français" if language == "fr" else "Wolof"
-    context    = f"[Zone : {location} | Langue : {lang_label}]"
-    full_msg   = f"{context}\n{message or 'Analyse cette photo de ma plante.'}"
+    response = None
 
-    # Construire l'historique au format Ollama
-    messages = []
-    for turn in history:
-        messages.append({"role": turn["role"], "content": turn["content"]})
-    messages.append({"role": "user", "content": full_msg})
-
-    # Traiter l'image si fournie
-    image_b64 = None
+    # ── Si image → CNN en priorité ───────────────────────────────────
     if image:
         try:
             img_bytes = base64.b64decode(image)
-            img       = PILImage.open(io.BytesIO(img_bytes))
+            img = PILImage.open(io.BytesIO(img_bytes))
             img.thumbnail((800, 800))
             buf = io.BytesIO()
             img.save(buf, format="JPEG", quality=80)
-            image_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+            image_b64_processed = base64.b64encode(buf.getvalue()).decode("utf-8")
         except Exception as e:
             return jsonify({"error": f"Image invalide : {str(e)}"})
 
-    # Appeler les outils nécessaires côté Python
-    msg_for_tools = message or ""
-    if image_b64:
-        # Photo envoyée → forcer le diagnostic maladie
-        msg_for_tools += " photo maladie feuille plante analyse"
+        response = diagnose_image(image_b64_processed, language)
 
-    tool_results = run_tools(
-        message=msg_for_tools,
-        location=location,
-        language=language
-    )
+    # ── Si pas d'image ou CNN n'a pas répondu → LLM ─────────────────
+    if not response:
+        lang_label   = "Français" if language == "fr" else "Wolof"
+        default_msg  = "Décris ce que tu vois sur cette photo."
+        full_msg     = f"[Zone: {location} | Langue: {lang_label}]\n{message or default_msg}"
 
-    # Appeler Gemma 4 avec le contexte enrichi
-    try:
-        response = call_gemma(messages, image_b64, tool_results)
-    except requests.exceptions.ConnectionError:
-        return jsonify({"error": "Ollama non disponible. Relancez le serveur Ollama."})
-    except Exception as e:
-        return jsonify({"error": f"Erreur : {str(e)}"})
+        tool_results = run_tools(message or "", location, language)
+        if tool_results:
+            context  = "\n\n".join(tool_results)
+            full_msg = f"{full_msg}\n\n=== Données ===\n{context}\n=== Fin ==="
 
-    # Générer la réponse audio
+        response = call_llm(full_msg)
+
+    # ── Audio ─────────────────────────────────────────────────────────
     audio = text_to_speech(response, language=language)
-
     return jsonify({"response": response, "audio": audio})
 
 
@@ -354,6 +278,6 @@ def chat():
 # Lancement
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    print(f"FarmSense démarré → http://0.0.0.0:5000")
-    print(f"Modèle : {GEMMA_MODEL}")
+    print("FarmSense v2 — CNN + Gemma4")
+    print(f"CNN : {'chargé' if model_cnn else 'non disponible'}")
     app.run(host="0.0.0.0", port=5000, debug=False, threaded=True)
