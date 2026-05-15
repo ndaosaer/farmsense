@@ -208,13 +208,32 @@ def call_llm(prompt: str) -> str:
 # ---------------------------------------------------------------------------
 _WOLOF_MARKERS = {"jëfandikoo","dafa","tàkk","ndox","garab","ci","bi","yi"}
 
+# URL du Space HuggingFace Wolof TTS
+WOLOF_TTS_URL = "https://ndaosaer-wolof-tts.hf.space/predict"
+
 def text_to_speech(text: str, language: str = "fr") -> str | None:
+    """
+    Synthèse vocale :
+    - Wolof : API GalsenAI xTTS v2 (voix native Wolof)
+    - Français : gTTS
+    """
     try:
         if language == "wo":
-            words = set(text.lower().split())
-            gtts_lang = "ha" if len(words & _WOLOF_MARKERS) >= 2 else "fr"
+            # Utiliser le TTS Wolof natif
+            r = requests.post(
+                WOLOF_TTS_URL,
+                json={"text": text[:800]},
+                timeout=60
+            )
+            if r.status_code == 200:
+                return base64.b64encode(r.content).decode("utf-8")
+            # Fallback gTTS si le Space est indisponible
+            print(f"Wolof TTS indisponible ({r.status_code}), fallback gTTS")
+            gtts_lang = "fr"
         else:
             gtts_lang = "fr"
+
+        # Français via gTTS
         tts = gTTS(text=text[:500], lang=gtts_lang, slow=False)
         tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
         tts.save(tmp.name)
@@ -222,7 +241,9 @@ def text_to_speech(text: str, language: str = "fr") -> str | None:
             audio_b64 = base64.b64encode(f.read()).decode("utf-8")
         os.unlink(tmp.name)
         return audio_b64
-    except Exception:
+
+    except Exception as e:
+        print(f"Erreur TTS : {e}")
         return None
 
 
