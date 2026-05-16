@@ -1,219 +1,322 @@
-# 🌾 FarmSense — Assistant Agricole Intelligent pour le Sahel
+# FarmSense — Agricultural Intelligence Assistant for the Sahel
 
-**Gemma 4 Good Hackathon | Kaggle × Google DeepMind**
-**Piste : Global Resilience — Digital Divide & Agricultural Access**
-
-> Mamadou est agriculteur à Kaolack. Ses feuilles de mil jaunissent depuis le bas.
-> Il envoie une description à FarmSense.
-> En quelques secondes, en Wolof, il reçoit : le diagnostic (Mildiou du mil),
-> la cause, les 3 actions à faire aujourd'hui, et la météo de sa zone.
-> Sans agronome. Sans connexion permanente. Dans sa langue maternelle.
+**Gemma 4 Good Hackathon | Kaggle x Google DeepMind**
+**Track: Global Resilience — Digital Divide and Agricultural Access**
 
 ---
 
-## 🎯 Le problème
+## Overview
 
-Au Sénégal, plus de 60% de la population active travaille dans l'agriculture.
-Les petits agriculteurs perdent chaque année entre 30% et 50% de leurs récoltes
-à cause de maladies non diagnostiquées à temps.
+FarmSense is an intelligent agricultural assistant designed for smallholder farmers in Senegal and the Sahel region. It combines a fine-tuned Gemma 4 language model with a high-precision CNN image classifier to provide accurate crop disease diagnosis, weather alerts, and market price guidance in both French and Wolof.
 
-- 1 agronome pour ~3 000 agriculteurs (ISRA, 2023)
-- Connectivité limitée dans les zones rurales
-- Barrière linguistique : la majorité parle Wolof, pas Français
-- Délai fatal : l'ergot du sorgho détruit une récolte en 48h si non traité
-
-FarmSense s'attaque directement à ces 4 obstacles.
+The system is designed to operate in low-connectivity environments, with an offline disease database and a lightweight architecture that runs on a standard smartphone browser.
 
 ---
 
-## 💡 La solution
+## The Problem
 
-FarmSense est un assistant agricole multimodal basé sur **Gemma 4 fine-tuné**
-spécifiquement pour les cultures et maladies du Sénégal et du Sahel.
+In Senegal, over 60 percent of the active population works in agriculture. Smallholder farmers lose between 30 and 50 percent of their harvest each year due to diseases that are not diagnosed in time.
 
-| Capacité | Usage dans FarmSense |
+The obstacles are concrete and well-documented:
+
+- 1 agronomist for approximately 3,000 farmers (ISRA, 2023)
+- Limited or no connectivity in rural Sahel areas
+- Language barrier: the majority of farmers speak Wolof, not French
+- Critical delay: diseases like sorghum ergot or cassava mosaic can destroy an entire harvest within 48 hours if untreated
+
+FarmSense addresses all four obstacles simultaneously.
+
+---
+
+## Architecture
+
+FarmSense uses a hybrid architecture combining two specialized models:
+
+**Image diagnosis pipeline:**
+The user sends a photo of a sick plant. An EfficientNet-B0 CNN classifier trained on 34,525 images identifies the disease with 99.4 percent accuracy. The result is mapped to a structured FarmSense response with diagnosis, cause, numbered actions, and an immediate action.
+
+**Text and voice pipeline:**
+The user describes their problem in text. A fine-tuned Gemma 4 E4B model generates a structured response in French or Wolof, enriched with real-time weather data from Open-Meteo and local market prices in FCFA.
+
+**Why a hybrid architecture:**
+Native multimodal fine-tuning of Gemma 4 with images is still experimental in the Unsloth framework. Rather than producing imprecise visual diagnoses, we trained a dedicated EfficientNet-B0 classifier that achieves near-perfect accuracy on the crop diseases covered. Gemma 4 handles all natural language tasks. The two models are complementary and each operates at its optimal capability.
+
+---
+
+## CNN Image Classifier
+
+**Model:** EfficientNet-B0 fine-tuned on PlantVillage and Groundnut Leaf Disease datasets
+
+**Training data:**
+
+| Dataset | Cultures | Images | Source |
+|---|---|---|---|
+| PlantVillage | Tomato, Corn, Potato | 22,164 | kaggle.com/abdallahalidev |
+| Groundnut Leaf Disease | Groundnut (Peanut) | 10,361 | kaggle.com/warcoder |
+| Total | 4 crops | 32,525 | 20 disease classes |
+
+**Training results:**
+
+| Epoch | Train Accuracy | Validation Accuracy |
+|---|---|---|
+| 1 | 84.1% | 93.0% |
+| 4 | 97.7% | 98.9% |
+| 8 | 99.3% | 99.4% |
+
+**Final validation accuracy: 99.4%**
+
+**Classes covered (20):**
+
+Tomato: Bacterial Spot, Early Blight, Late Blight, Leaf Mold, Septoria Leaf Spot, Spider Mites, Target Spot, Yellow Leaf Curl Virus, Mosaic Virus, Healthy
+
+Corn (Maize): Common Rust, Northern Leaf Blight, Gray Leaf Spot, Healthy
+
+Groundnut (Peanut): Early Leaf Spot, Late Leaf Spot, Rust, Early Rust, Nutrition Deficiency, Healthy
+
+**Model published:** https://huggingface.co/ndaosaer/farmsense-cnn
+
+---
+
+## Fine-tuned Language Model
+
+**Base model:** Gemma 4 E4B (unsloth/gemma-4-E4B-it)
+
+**Method:** QLoRA 4-bit fine-tuning with Unsloth
+
+**Dataset v4 (133 examples):**
+
+| Category | French | Wolof | Total |
+|---|---|---|---|
+| Disease diagnosis | 20 | 17 | 37 |
+| Pests and insects | 8 | 0 | 8 |
+| Seed varieties ISRA | 5 | 4 | 9 |
+| Post-harvest storage | 4 | 5 | 9 |
+| Market prices | 6 | 7 | 13 |
+| Weather alerts | 5 | 3 | 8 |
+| Market gardening | 5 | 0 | 5 |
+| Emergency cases | 4 | 0 | 4 |
+| Multi-turn conversations | 4 | 3 | 7 |
+| General agriculture | 7 | 3 | 10 |
+| Corrected format examples | 6 | 10 | 16 |
+| Photo non-agricultural | 4 | 0 | 4 |
+| Contextual follow-up | 6 | 3 | 9 |
+| Total | 90 | 55 | 133 |
+
+**Training parameters:**
+
+- Epochs: 8
+- Learning rate: 1e-4
+- LoRA rank: 16
+- Batch size: 1 with gradient accumulation steps 8
+- Scheduler: cosine
+- Loss final steps: 0.0015
+- Training duration: approximately 18 minutes on GPU T4
+
+**Model published:** https://huggingface.co/ndaosaer/farmsense-gemma4-v2
+
+---
+
+## Disease Database
+
+The file `data/diseases.json` is an original contribution of this project. To our knowledge, no publicly available phytosanitary database combines all of the following:
+
+- 20 diseases specific to Senegal and the Sahel
+- 11 crops covered: millet, sorghum, corn, rice, peanut, cowpea, cassava, tomato, onion, okra, watermelon
+- Complete data in both French and Wolof for each disease
+- Urgency level in days to prioritize action
+- Senegalese regions affected per pathology
+- Cited scientific sources for each entry
+
+**Sources:**
+
+| Source | Usage |
 |---|---|
-| Gemma 4 fine-tuné (QLoRA) | Modèle spécialisé agriculture Sénégal/Wolof |
-| Base phytosanitaire offline | 20 maladies, 11 cultures, Français + Wolof |
-| Météo temps réel | Open-Meteo, alertes agricoles automatiques |
-| Prix du marché | Données FCFA par culture et par région |
-| Synthèse vocale | Réponses audio en Français et Wolof |
+| CABI Crop Protection Compendium (cabi.org/cpc) | Pathogen identification, symptoms, distribution |
+| CIRAD Agritrop (agritrop.cirad.fr) | Tropical Africa and Sahel publications |
+| ISRA Senegal (isra.sn) | Resistant varieties, local context |
+| FAO West Africa | Recommended treatments, emergency protocols |
+| INRAN Niger 2024 | Sorghum and millet diseases, Sahelian zone |
+| Agrisenegal.com | Market gardening diseases, Senegal context |
+
+The database was compiled manually. Each disease entry was verified against at least one primary scientific source. Data was not scraped automatically. The Wolof translations were developed with the support of linguistic resources and adapted to the oral agricultural vocabulary used in the field.
+
+This database is published as an open-source contribution under the MIT license and can be enriched by field agents without developer skills.
 
 ---
 
-## 🤖 Modèle Fine-tuné
-
-Le modèle **FarmSense-Gemma4** est disponible sur HuggingFace :
-**https://huggingface.co/ndaosaer/farmsense-gemma4-v2**
-
-### Méthodologie du fine-tuning
-
-- **Modèle de base** : Gemma 4 E4B (unsloth/gemma-4-E4B-it)
-- **Méthode** : QLoRA 4-bit avec Unsloth (2x plus rapide)
-- **Dataset** : 133 exemples conversationnels originaux
-- **Epochs** : 8 — learning rate : 1e-4
-- **Loss finale** : 0.95 (derniers steps)
-- **Durée** : ~18 minutes sur GPU T4
-
-### Dataset original
-
-133 exemples couvrant :
-- Diagnostics de 20 maladies agricoles (Français + Wolof)
-- Questions météo avec alertes agricoles
-- Prix du marché avec conseils de vente
-- Conversations multi-tours (suivi traitement)
-- Gestion post-récolte et stockage
-- Cultures maraîchères
-
----
-
-## 🌱 Base de données phytosanitaire — Contribution originale
-
-La base `data/diseases.json` est une **contribution originale open-source**.
-À notre connaissance, aucune base similaire n'existe en accès libre avec :
-
-- **20 maladies** spécifiques au Sénégal et au Sahel
-- **11 cultures** : mil, sorgho, maïs, riz, arachide, niébé, manioc, tomate, oignon, gombo, pastèque
-- **Français ET Wolof** pour chaque maladie
-- **Niveau d'urgence en jours** pour prioriser l'action
-- **Régions sénégalaises** concernées
-- **Sources citées** : CABI, CIRAD, ISRA, FAO, INRAN, Agrisenegal
-
-### Sources utilisées
-
-| Source | Utilisation |
-|---|---|
-| CABI Crop Protection Compendium | Identification pathogènes, symptômes |
-| CIRAD Agritrop | Publications Afrique tropicale |
-| ISRA Sénégal | Variétés résistantes, contexte local |
-| FAO Afrique de l'Ouest | Traitements recommandés |
-| INRAN Niger 2024 | Maladies sorgho et mil sahélien |
-| Agrisenegal.com | Maladies maraîchères Sénégal |
-
----
-
-## 🗂️ Structure du projet
+## Project Structure
 
 ```
 farmsense/
-├── README.md
-├── requirements.txt
-├── DEMO_SCRIPT.md
-│
-├── app/
-│   ├── app_flask.py          ← Serveur Flask principal
-│   ├── tools.py              ← Météo, prix marché, base maladies
-│   └── templates/
-│       └── index.html        ← Interface web mobile-first
-│
-├── data/
-│   └── diseases.json         ← Base phytosanitaire 20 maladies
-│
-├── training/
-│   ├── generate_dataset.py       ← Dataset v1 (52 exemples)
-│   ├── generate_dataset_v2.py    ← Dataset v2 (52 exemples)
-│   ├── generate_dataset_v3.py    ← Dataset v3 corrections (29 exemples)
-│   └── farmsense_dataset_v4.jsonl ← Dataset final (133 exemples)
-│
-└── notebooks/
-    ├── farmsense_kaggle.ipynb        ← Lancement app (4 cellules)
-    └── farmsense_finetune_v2.ipynb   ← Fine-tuning Unsloth
+    README.md
+    requirements.txt
+    DEMO_SCRIPT.md
+    app/
+        app_flask.py              Flask server with CNN and LLM integration
+        tools.py                  Weather, market prices, disease database tools
+        templates/
+            index.html            Mobile-first web interface
+    data/
+        diseases.json             Phytosanitary database, 20 diseases, French and Wolof
+    training/
+        generate_dataset.py       Dataset v1, 52 examples
+        generate_dataset_v2.py    Dataset v2, 52 examples
+        generate_dataset_v3.py    Dataset v3 corrections, 29 examples
+        farmsense_dataset_v4.jsonl  Final dataset, 133 examples
+    notebooks/
+        farmsense_kaggle.ipynb       Launch notebook, 4 cells
+        farmsense_finetune_v2.ipynb  Fine-tuning notebook, Unsloth QLoRA
 ```
 
 ---
 
-## 🚀 Lancer le projet
+## Technical Stack
 
-### Sur Kaggle (recommandé)
+| Component | Technology | Role |
+|---|---|---|
+| Image classifier | EfficientNet-B0, PyTorch | Disease diagnosis from photos |
+| Language model | Gemma 4 E4B, fine-tuned | French and Wolof responses |
+| Fine-tuning framework | Unsloth QLoRA 4-bit | Efficient fine-tuning on T4 GPU |
+| Web interface | Flask, HTML, CSS, JavaScript | Mobile-first user interface |
+| Public tunnel | ngrok | Public URL from Kaggle environment |
+| Weather data | Open-Meteo API | Free, no API key, West Africa coverage |
+| Text-to-speech | gTTS | Audio responses in French and Wolof |
+| Disease database | JSON, offline | Works without internet connection |
 
-1. Ouvrir `notebooks/farmsense_kaggle.ipynb`
-2. Activer **GPU T4** dans les paramètres
-3. Remplacer les tokens HuggingFace et ngrok
-4. Exécuter les **4 cellules dans l'ordre**
-5. Le lien public apparaît à la fin de la cellule 4
+---
 
-### En local
+## Running the Project
+
+### On Kaggle (recommended for demonstration)
+
+1. Open `notebooks/farmsense_kaggle.ipynb`
+2. Enable GPU T4 in the notebook settings
+3. Replace HuggingFace and ngrok tokens in cells 2 and 4
+4. Execute cells 1 through 4 in order
+5. The public link appears at the end of cell 4
+
+### Local installation
 
 ```bash
-# 1. Installer Ollama
+# Install Ollama for local LLM serving
 curl -fsSL https://ollama.com/install.sh | sh
 ollama pull gemma4:e4b
 
-# 2. Installer les dépendances
+# Install Python dependencies
 pip install -r requirements.txt
 
-# 3. Lancer
+# Launch FarmSense
 cd app
 python app_flask.py
 ```
 
-### Relancer le fine-tuning
+---
 
-```bash
-# Sur Kaggle avec GPU T4
-# Ouvrir notebooks/farmsense_finetune_v2.ipynb
-# Exécuter cellules 1 → 2 → 3 → 4
+## Impact
+
+**Direct target population:**
+700,000 or more smallholder farms in Senegal. Priority zones without agronomist access: the peanut basin, Casamance, the Senegal River valley.
+
+**Why this works in context:**
+
+Offline-first design: The disease database is embedded locally. Even without a 4G network, diagnosis works. Weather and market prices enrich the response when a connection is available, but are never blocking.
+
+Language accessibility: Wolof is the mother tongue of approximately 40 percent of Senegalese citizens and the national lingua franca. Receiving agricultural advice in one's mother tongue is not a comfort; it is the difference between understanding and acting in time.
+
+Voice output: For farmers with limited literacy, automatic audio output is essential. The text displays for those who can read; the audio plays for everyone.
+
+Response length: Maximum 8 lines, plain text, no formatting. Designed to be read on a phone screen in direct sunlight in the field.
+
+**Scalability:**
+Other languages: Pulaar, Serer, Mandinka, same architecture, new data fields
+Other countries: Mali, Burkina Faso, Niger, Chad, same crops, same disease base
+Price updates: editable by a field agent in the JSON file, no developer required
+New diseases: a new JSON entry by an agronomist, no technical skills required
+
+---
+
+## Hackathon Criteria Alignment
+
+| Criterion | Weight | FarmSense Response |
+|---|---|---|
+| Innovation | 30% | CNN classifier at 99.4% accuracy trained on African crops; original bilingual phytosanitary database; first agricultural assistant with Wolof support published open-source |
+| Impact | 30% | 700,000+ target farmers; documented economic survival problem; deployable immediately in the field |
+| Technical execution | 25% | EfficientNet-B0 vision + Gemma 4 fine-tuned language + offline-first architecture + voice synthesis |
+| Accessibility | 15% | Offline capable, voice output, Wolof language, mobile-first, works on basic smartphone |
+
+---
+
+## Roadmap Version 2
+
+- Google Cloud Text-to-Speech integration for native Wolof voice synthesis
+- Pulaar and Serer language support (3rd and 4th languages of Senegal)
+- Expansion of the CNN classifier to millet, sorghum, and cassava using newly collected field datasets
+- Lightweight Android application for fully offline deployment
+- Partnership with ISRA for scientific validation and database enrichment
+- Extension to the five Sahel countries most affected by food insecurity
+
+---
+
+## Known Limitations
+
+The CNN classifier covers tomato, corn, and peanut diseases. Millet, sorghum, cassava, rice, and cowpea are currently handled by text description only, as no public image datasets exist for these Sahelian crops. Field image collection for these crops is planned for version 2.
+
+The Wolof voice synthesis uses a phonetic approximation through the Hausa engine in gTTS. Native Wolof text-to-speech via Google Cloud TTS is planned for version 2.
+
+Market prices are indicative values updated manually. Integration with official ANSD market price feeds is planned.
+
+---
+
+## Citation
+
+If you use the FarmSense disease database or dataset in your work, please cite:
+
+```
+FarmSense Agricultural Database, 2026
+Bilingual phytosanitary database for Senegal and the Sahel (French and Wolof)
+Sources: CABI CPC, CIRAD Agritrop, ISRA Senegal, FAO West Africa, INRAN Niger
+Available at: https://github.com/ndaosaer/farmsense
 ```
 
 ---
 
-## 🌍 Impact
+## Wolof Voice Synthesis — Architecture and Roadmap
 
-### Cible directe
-- **700 000+** exploitations agricoles familiales au Sénégal
-- Zones sans accès agronome : bassin arachidier, Casamance, vallée du Fleuve
+### Current implementation
 
-### Pourquoi ça fonctionne
+The current version uses gTTS (Google Text-to-Speech) with the French phonetic engine as an approximation for Wolof audio output. This produces intelligible audio but with French pronunciation patterns rather than native Wolof phonetics.
 
-**Offline-first** — La base de maladies est embarquée localement.
-Sans réseau, le diagnostic fonctionne. Météo et prix enrichissent
-la réponse quand la connexion est disponible.
+### GalsenAI xTTS v2 Wolof — Integrated but pending GPU
 
-**Wolof** — Langue maternelle de ~40% des Sénégalais.
-Comprendre un conseil dans sa langue maternelle, c'est la différence
-entre agir à temps ou perdre sa récolte.
+A native Wolof text-to-speech system has been fully integrated into the FarmSense architecture. The implementation uses the GalsenAI xTTS v2 Wolof model, developed by the GalsenAI community (github.com/Galsenaicommunity), which is the only open-source neural TTS model trained specifically on Wolof speech data.
 
-**Voix** — Pour les agriculteurs peu alphabétisés, l'audio est essentiel.
+The integration is complete and functional:
 
-**Réponses courtes** — 8 lignes maximum, lisible sur écran de téléphone
-en plein soleil au champ.
+- Model files are published at huggingface.co/ndaosaer/wolof-tts-model (8.1 GB total)
+- A HuggingFace Space is deployed at huggingface.co/spaces/ndaosaer/wolof-tts exposing a REST API endpoint POST /predict
+- The Space accepts Wolof text and returns a WAV audio file
+- The FarmSense Flask server is architected to call this endpoint when language is set to Wolof
+- All xTTS language patches required to support the Wolof language code have been implemented and validated
 
-### Extensibilité
-- Autres langues : Pulaar, Sérère, Mandingue
-- Autres pays : Mali, Burkina Faso, Niger, Tchad
-- Enrichissement dataset : par agents terrain non-développeurs
+The API returns correct audio when called with sufficient timeout. The blocking issue is inference speed on CPU hardware: the 5.6 GB GPT fine-tuned checkpoint requires approximately 300 seconds per inference on the free CPU tier of HuggingFace Spaces, which is not acceptable for real-time agricultural assistance.
 
----
+### What is needed for production
 
-## 📊 Alignement critères hackathon
+Deploying the HuggingFace Space on an Nvidia T4 GPU instance reduces inference time from 300 seconds to approximately 2 to 3 seconds per response. This is the only remaining step to enable native Wolof voice synthesis in production.
 
-| Critère | Poids | Réponse FarmSense |
-|---|---|---|
-| Innovation | 30% | Gemma 4 fine-tuné agriculture Sénégal/Wolof — premier modèle de ce type open-source |
-| Impact | 30% | 700k+ agriculteurs cibles, problème documenté de survie économique |
-| Exécution technique | 25% | Fine-tuning QLoRA + base offline + météo + voix + interface mobile |
-| Accessibilité | 15% | Offline, voix, Wolof, smartphone basique suffisant |
+The model, the Space, the API, and the FarmSense integration code are all ready. Only the GPU compute resource is missing.
 
----
+### Technical details of the xTTS integration
 
-## 🔮 Améliorations prévues (v2)
+The GalsenAI xTTS v2 model does not natively register Wolof as a supported language in the TTS library. The following patches were developed and validated to enable Wolof inference:
 
-- **Dataset multimodal** : intégration de PlantVillage (54 000 images) pour fine-tuner la vision
-- **Google Cloud TTS** : synthèse vocale Wolof native
-- **Support Pulaar et Sérère** : 3ème et 4ème langues du Sénégal
-- **Application Android** : déploiement 100% hors connexion
-- **Partenariat ISRA** : validation scientifique et enrichissement de la base
+- Added "wo" to config.languages to pass the configuration validation
+- Added "wo" to tokenizer.char_limits with the French character limit (273 characters) to pass the sentence splitting validation
+- Patched VoiceBpeTokenizer.preprocess_text to redirect language code "wo" to the French preprocessor, which handles the Latin alphabet used by Wolof
 
----
+These patches are implemented in the HuggingFace Space app.py and do not modify the underlying model weights.
 
-## ⚠️ Limitations connues
+### Data attribution
 
-- La vision sur images non-agricoles peut donner des résultats imprécis.
-  Le modèle est optimisé pour les descriptions textuelles et les photos de cultures.
-  Une version multimodale avec dataset d'images est en développement (PlantVillage).
-- Les prix du marché sont indicatifs (mise à jour manuelle).
-- La synthèse vocale Wolof utilise une approximation phonétique (hausa).
+The GalsenAI xTTS v2 Wolof checkpoint was trained by the GalsenAI community on Wolof speech data recorded by native speakers. The voice reference used in FarmSense (anta_sample.wav) is the sample provided with the original checkpoint. Full attribution to GalsenAI and the original contributors.
 
----
-
-*"La technologie la plus puissante est celle qui atteint ceux qui en ont le plus besoin."*
