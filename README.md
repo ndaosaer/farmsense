@@ -146,11 +146,11 @@ This database is published as an open-source contribution under the MIT license 
 
 ## Project Structure
 
-```
-
 Gemma 4 fine-tuned agricultural assistant for Senegal and the Sahel. Crop disease diagnosis in French and Wolof via CNN classifier (99.4% accuracy) and fine-tuned language model.
 Offline-first, mobile-first.
 
+
+```
 farmsense/
     README.md
     requirements.txt
